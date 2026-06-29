@@ -327,21 +327,21 @@ const App = (() => {
     if (pct >= 100) {
       p.classList.add('celebrate');
       a.classList.add('celebrate');
-      if (mouthP) mouthP.setAttribute('d', 'M 43 70 Q 55 84 67 70');
-      if (mouthA) mouthA.setAttribute('d', 'M 43 70 Q 55 84 67 70');
+      if (mouthP) mouthP.setAttribute('d', 'M 43 74 Q 55 88 67 74');
+      if (mouthA) mouthA.setAttribute('d', 'M 43 74 Q 55 88 67 74');
     } else if (pct >= 60) {
       p.classList.add('happy');
       a.classList.add('happy');
-      if (mouthP) mouthP.setAttribute('d', 'M 45 70 Q 55 82 65 70');
-      if (mouthA) mouthA.setAttribute('d', 'M 45 70 Q 55 82 65 70');
+      if (mouthP) mouthP.setAttribute('d', 'M 45 74 Q 55 86 65 74');
+      if (mouthA) mouthA.setAttribute('d', 'M 45 74 Q 55 86 65 74');
     } else if (pct <= 20 && S.mode === 'punishment') {
       p.classList.add('sad');
       a.classList.add('sad');
-      if (mouthP) mouthP.setAttribute('d', 'M 46.5 76 Q 55 69 63.5 76');
-      if (mouthA) mouthA.setAttribute('d', 'M 46.5 76 Q 55 69 63.5 76');
+      if (mouthP) mouthP.setAttribute('d', 'M 46.5 80 Q 55 73 63.5 80');
+      if (mouthA) mouthA.setAttribute('d', 'M 46.5 80 Q 55 73 63.5 80');
     } else {
-      if (mouthP) mouthP.setAttribute('d', 'M 46.5 70 Q 55 80 63.5 70');
-      if (mouthA) mouthA.setAttribute('d', 'M 46.5 70 Q 55 80 63.5 70');
+      if (mouthP) mouthP.setAttribute('d', 'M 46.5 74 Q 55 84 63.5 74');
+      if (mouthA) mouthA.setAttribute('d', 'M 46.5 74 Q 55 84 63.5 74');
     }
   }
 
@@ -395,12 +395,16 @@ const App = (() => {
     </g>
     <ellipse cx="55" cy="86" rx="37" ry="42" fill="white" stroke="#D8D8D8" stroke-width="1.5"/>
     <ellipse cx="55" cy="65" rx="27" ry="24" fill="#F8F8F8" stroke="#E0E0E0" stroke-width="1"/>
-    <path d="M 40 49 Q 44.5 46 49 49" stroke="#2A2A2A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <path d="M 61 49 Q 65.5 46 70 49" stroke="#2A2A2A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <circle id="c1-eye-l" cx="44" cy="56" r="4.5" fill="#2A2A2A"/>
-    <circle id="c1-eye-r" cx="66" cy="56" r="4.5" fill="#2A2A2A"/>
-    <ellipse cx="55" cy="66" rx="4" ry="2.5" fill="#2A2A2A"/>
-    <path id="pochacco-mouth" d="M 46.5 70 Q 55 80 63.5 70" stroke="#2A2A2A" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M 39 52 Q 44 48.5 49 52" stroke="#1A1A1A" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M 61 52 Q 66 48.5 71 52" stroke="#1A1A1A" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <circle id="c1-eye-l" cx="44" cy="58" r="5" fill="#1A1A1A"/>
+    <circle id="c1-eye-r" cx="66" cy="58" r="5" fill="#1A1A1A"/>
+    <circle cx="46" cy="55.5" r="1.8" fill="rgba(255,255,255,0.9)"/>
+    <circle cx="68" cy="55.5" r="1.8" fill="rgba(255,255,255,0.9)"/>
+    <ellipse cx="55" cy="68" rx="5.5" ry="3.8" fill="#1A1A1A"/>
+    <circle cx="53" cy="69" r="1.3" fill="#3A3A3A"/>
+    <circle cx="57" cy="69" r="1.3" fill="#3A3A3A"/>
+    <path id="pochacco-mouth" d="M 46.5 74 Q 55 84 63.5 74" stroke="#1A1A1A" stroke-width="2" fill="none" stroke-linecap="round"/>
     <rect x="33" y="90" width="44" height="8" rx="4" fill="#5B9BD5" stroke="#2B6AB3" stroke-width="0.5"/>
     <circle cx="55" cy="94" r="3.5" fill="#2B6AB3"/>
     <circle cx="55" cy="94" r="1.5" fill="#A8D4F8"/>
@@ -420,16 +424,20 @@ const App = (() => {
     <path d="M 55 38 Q 68 28 72 36 Q 74 44 66 47 Q 60 49 55 43 Z" fill="#FF8FA0" stroke="#E8607A" stroke-width="0.8"/>
     <ellipse cx="55" cy="40.5" rx="5.5" ry="6" fill="#E8607A"/>
     <circle cx="55" cy="39" r="2.5" fill="#FFB3C6"/>
-    <path d="M 40 49 Q 44.5 46 49 49" stroke="#2A2A2A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <path d="M 61 49 Q 65.5 46 70 49" stroke="#2A2A2A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <circle id="c2-eye-l" cx="44" cy="56" r="4.5" fill="#2A2A2A"/>
-    <circle id="c2-eye-r" cx="66" cy="56" r="4.5" fill="#2A2A2A"/>
-    <line x1="38" y1="52" x2="35.5" y2="49" stroke="#2A2A2A" stroke-width="2" stroke-linecap="round"/>
-    <line x1="41.5" y1="51" x2="40" y2="48" stroke="#2A2A2A" stroke-width="2" stroke-linecap="round"/>
-    <line x1="72" y1="52" x2="74.5" y2="49" stroke="#2A2A2A" stroke-width="2" stroke-linecap="round"/>
-    <line x1="68.5" y1="51" x2="70" y2="48" stroke="#2A2A2A" stroke-width="2" stroke-linecap="round"/>
-    <ellipse cx="55" cy="66" rx="4" ry="2.5" fill="#2A2A2A"/>
-    <path id="adai-mouth" d="M 46.5 70 Q 55 80 63.5 70" stroke="#2A2A2A" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M 39 52 Q 44 48.5 49 52" stroke="#1A1A1A" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M 61 52 Q 66 48.5 71 52" stroke="#1A1A1A" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <circle id="c2-eye-l" cx="44" cy="58" r="5" fill="#1A1A1A"/>
+    <circle id="c2-eye-r" cx="66" cy="58" r="5" fill="#1A1A1A"/>
+    <circle cx="46" cy="55.5" r="1.8" fill="rgba(255,255,255,0.9)"/>
+    <circle cx="68" cy="55.5" r="1.8" fill="rgba(255,255,255,0.9)"/>
+    <line x1="38" y1="54" x2="35" y2="51" stroke="#1A1A1A" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="41" y1="52.5" x2="39" y2="49.5" stroke="#1A1A1A" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="72" y1="54" x2="75" y2="51" stroke="#1A1A1A" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="69" y1="52.5" x2="71" y2="49.5" stroke="#1A1A1A" stroke-width="2.2" stroke-linecap="round"/>
+    <ellipse cx="55" cy="68" rx="5.5" ry="3.8" fill="#1A1A1A"/>
+    <circle cx="53" cy="69" r="1.3" fill="#3A3A3A"/>
+    <circle cx="57" cy="69" r="1.3" fill="#3A3A3A"/>
+    <path id="adai-mouth" d="M 46.5 74 Q 55 84 63.5 74" stroke="#1A1A1A" stroke-width="2" fill="none" stroke-linecap="round"/>
     <rect x="33" y="90" width="44" height="8" rx="4" fill="#FF8FA0" stroke="#E8607A" stroke-width="0.5"/>
     <circle cx="55" cy="94" r="3.5" fill="#E8607A"/>
     <circle cx="55" cy="94" r="1.5" fill="#FFD4E8"/>

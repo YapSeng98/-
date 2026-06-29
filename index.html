@@ -167,61 +167,62 @@
     }
     .char-wrap {
       display: flex; flex-direction: column; align-items: center; gap: 2px;
-      cursor: default;
+      cursor: default; transform-origin: center bottom;
     }
-    .char-wrap.pochacco { animation: char-idle 3.4s ease-in-out infinite; }
-    .char-wrap.adai     { animation: char-idle 3.4s ease-in-out infinite 0.9s; }
+    /* ── Body bounce (线条小狗 squash-and-stretch style) ── */
+    .char-wrap.pochacco { animation: char-idle 2.8s cubic-bezier(0.45,0,0.55,1) infinite; }
+    .char-wrap.adai     { animation: char-idle 2.8s cubic-bezier(0.45,0,0.55,1) infinite 0.9s; }
     @keyframes char-idle {
-      0%,100% { transform: translateY(0) rotate(0deg); }
-      25%     { transform: translateY(-9px) rotate(-1.5deg); }
-      50%     { transform: translateY(-12px) rotate(0deg); }
-      75%     { transform: translateY(-9px) rotate(1.5deg); }
+      0%,100% { transform: translateY(0)     scaleX(1.04) scaleY(0.97); }   /* land — squash */
+      10%     { transform: translateY(-2px)  scaleX(1.01) scaleY(1.00); }   /* just left ground */
+      45%     { transform: translateY(-13px) scaleX(0.95) scaleY(1.07); }   /* peak — stretch */
+      55%     { transform: translateY(-13px) scaleX(0.95) scaleY(1.07); }   /* brief float */
+      90%     { transform: translateY(-2px)  scaleX(1.01) scaleY(1.00); }   /* about to land */
     }
-    .char-wrap.happy { animation: char-happy 0.52s cubic-bezier(0.34,1.56,0.64,1) infinite; }
+    .char-wrap.happy { animation: char-happy 0.48s cubic-bezier(0.34,1.8,0.64,1) infinite; }
     @keyframes char-happy {
-      0%,100% { transform: translateY(0) scale(1,1) rotate(-2deg); }
-      45%     { transform: translateY(-22px) scale(1.06,0.94) rotate(2deg); }
+      0%,100% { transform: translateY(0)     scaleX(1.08) scaleY(0.93); }
+      40%     { transform: translateY(-26px) scaleX(0.92) scaleY(1.10); }
+      70%     { transform: translateY(-20px) scaleX(0.94) scaleY(1.07); }
     }
-    .char-wrap.sad { animation: char-sad 1.8s ease-in-out infinite; }
+    .char-wrap.sad { animation: char-sad 2s ease-in-out infinite; }
     @keyframes char-sad {
-      0%,100% { transform: translateY(0) rotate(0deg); }
-      50%     { transform: translateY(5px) rotate(-3deg); }
+      0%,100% { transform: translateY(0)   scaleX(1) scaleY(1); }
+      50%     { transform: translateY(6px) scaleX(1.04) scaleY(0.95) rotate(-2deg); }
     }
-    .char-wrap.celebrate { animation: celebrate 0.42s cubic-bezier(0.34,1.56,0.64,1) infinite; }
+    .char-wrap.celebrate { animation: celebrate 0.38s cubic-bezier(0.34,2,0.64,1) infinite; }
     @keyframes celebrate {
-      0%   { transform: translateY(0) scale(1,1) rotate(-5deg); }
-      30%  { transform: translateY(-28px) scale(1.12,0.9) rotate(5deg); }
-      60%  { transform: translateY(-22px) scale(1.08,0.96) rotate(-3deg); }
-      100% { transform: translateY(0) scale(1,1) rotate(-5deg); }
+      0%   { transform: translateY(0)     scaleX(1.12) scaleY(0.88) rotate(0deg); }
+      35%  { transform: translateY(-32px) scaleX(0.90) scaleY(1.12) rotate(10deg); }
+      65%  { transform: translateY(-28px) scaleX(0.92) scaleY(1.10) rotate(-10deg); }
+      100% { transform: translateY(0)     scaleX(1.12) scaleY(0.88) rotate(0deg); }
     }
 
-    /* ── Ear animations (big floppy blob-ear style) ── */
+    /* ── Ear flap (synced with body bounce — ears lag behind body) ── */
     #pochacco-left-ear {
       transform-box: fill-box; transform-origin: right top;
-      animation: ear-wiggle-left 3.6s ease-in-out infinite;
+      animation: ear-flap-left 2.8s ease-in-out infinite;
     }
     #pochacco-right-ear {
       transform-box: fill-box; transform-origin: left top;
-      animation: ear-wiggle-right 3.6s ease-in-out infinite 0.6s;
+      animation: ear-flap-right 2.8s ease-in-out infinite;
     }
-    @keyframes ear-wiggle-left {
-      0%,100% { transform: rotate(0deg); }
-      30%     { transform: rotate(-10deg); }
-      65%     { transform: rotate(6deg); }
+    @keyframes ear-flap-left {
+      0%,100% { transform: rotate(5deg); }    /* body landing — ears swing back */
+      45%     { transform: rotate(-14deg); }  /* body peak — ears lag, flap down */
     }
-    @keyframes ear-wiggle-right {
-      0%,100% { transform: rotate(0deg); }
-      30%     { transform: rotate(10deg); }
-      65%     { transform: rotate(-6deg); }
+    @keyframes ear-flap-right {
+      0%,100% { transform: rotate(-5deg); }
+      45%     { transform: rotate(14deg); }
     }
-    .char-wrap.happy #pochacco-left-ear  { animation: ear-wiggle-left  0.4s ease-in-out infinite alternate; }
-    .char-wrap.happy #pochacco-right-ear { animation: ear-wiggle-right 0.4s ease-in-out infinite alternate; }
-    .char-wrap.celebrate #pochacco-left-ear  { animation: ear-wiggle-left  0.25s ease-in-out infinite alternate; }
-    .char-wrap.celebrate #pochacco-right-ear { animation: ear-wiggle-right 0.25s ease-in-out infinite alternate; }
-    .char-wrap.sad #pochacco-left-ear  { animation: ear-droop-left  2.2s ease-in-out infinite; }
-    .char-wrap.sad #pochacco-right-ear { animation: ear-droop-right 2.2s ease-in-out infinite; }
-    @keyframes ear-droop-left  { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(10deg); } }
-    @keyframes ear-droop-right { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(-10deg); } }
+    .char-wrap.happy #pochacco-left-ear  { animation: ear-flap-left  0.38s ease-in-out infinite alternate; }
+    .char-wrap.happy #pochacco-right-ear { animation: ear-flap-right 0.38s ease-in-out infinite alternate; }
+    .char-wrap.celebrate #pochacco-left-ear  { animation: ear-flap-left  0.22s ease-in-out infinite alternate; }
+    .char-wrap.celebrate #pochacco-right-ear { animation: ear-flap-right 0.22s ease-in-out infinite alternate; }
+    .char-wrap.sad #pochacco-left-ear  { animation: ear-droop-left  2.4s ease-in-out infinite; }
+    .char-wrap.sad #pochacco-right-ear { animation: ear-droop-right 2.4s ease-in-out infinite; }
+    @keyframes ear-droop-left  { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(12deg); } }
+    @keyframes ear-droop-right { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(-12deg); } }
 
     /* ── Eye blink ── */
     @keyframes dog-blink {
