@@ -49,18 +49,28 @@ const App = (() => {
     return data;
   }
 
-  // SN PDI MySQL uses utf8mb3 (3-byte max) — 4-byte emoji get corrupted on write.
-  // Workaround: escape surrogate pairs to \uXXXX\uXXXX ASCII sequences before storing.
+  // SN PDI MySQL uses utf8mb3 (3-byte max) — supplementary (4-byte) emoji corrupt on write.
+  // Workaround: encode as \xCODEPOINT (7 chars) which fits in a 10-char SN field.
   function encodeForSN(str) {
     if (!str) return str;
-    return str.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, (m) =>
-      `\\u${m.charCodeAt(0).toString(16)}\\u${m.charCodeAt(1).toString(16)}`
-    );
+    // Spread via [...str] correctly iterates Unicode code points (handles surrogate pairs)
+    return [...str].map(ch => {
+      const cp = ch.codePointAt(0);
+      return cp > 0xFFFF ? `\\x${cp.toString(16).toUpperCase()}` : ch;
+    }).join('');
   }
 
   function decodeFromSN(str) {
-    if (!str || !str.includes('\\u')) return str;
-    return str.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+    if (!str) return str;
+    // Decode \xCODEPOINT format (e.g. \x1F61A → 😚)
+    if (str.includes('\\x')) {
+      str = str.replace(/\\x([0-9a-fA-F]+)/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)));
+    }
+    // Also decode legacy \uXXXX surrogate format saved by older versions
+    if (str.includes('\\u')) {
+      str = str.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+    }
+    return str;
   }
 
   async function snFetch(path, opts = {}) {
