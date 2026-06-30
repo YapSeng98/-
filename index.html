@@ -958,73 +958,67 @@
       font-size: 13px; color: var(--sub); font-weight: 500; margin: 0;
       letter-spacing: 0.02em;
     }
-    /* ── 3-col layout: char | center | char ── */
+    /* ── Chars row: [CHAR1] 💙 [CHAR2] ── */
     .sp-main-row {
       display: flex; align-items: center; justify-content: center;
-      gap: 10px; width: 100%; max-width: 360px; margin: 10px 0 4px;
-    }
-    .sp-mid {
-      flex: 1; display: flex; flex-direction: column;
-      align-items: center; gap: 10px;
-      min-width: 0; max-width: 160px;
+      gap: 18px; width: 100%; max-width: 320px; margin: 16px 0 10px;
     }
     .sp-char-card {
-      display: flex; flex-direction: column; align-items: center; gap: 6px;
-      padding: 10px 8px; border-radius: 20px; flex-shrink: 0;
-      width: 80px;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      padding: 16px 12px 12px; border-radius: 28px; flex-shrink: 0;
+      width: 120px;
     }
     .sp-char-card.c1 {
-      background: white; border: 2.5px solid #5B9BD5;
-      box-shadow: 0 6px 22px rgba(91,155,213,0.28);
+      background: linear-gradient(170deg, #EBF4FF 0%, #FFFFFF 100%);
+      border: 2.5px solid #5B9BD5;
+      box-shadow: 0 10px 32px rgba(91,155,213,0.30);
       animation: sp-char-float 3.0s ease-in-out infinite;
     }
     .sp-char-card.c2 {
-      background: white; border: 2.5px solid #FF8FA0;
-      box-shadow: 0 6px 22px rgba(255,143,160,0.28);
+      background: linear-gradient(170deg, #FFF0F7 0%, #FFFFFF 100%);
+      border: 2.5px solid #FF8FA0;
+      box-shadow: 0 10px 32px rgba(255,143,160,0.30);
       animation: sp-char-float 3.0s ease-in-out infinite -1.5s;
     }
     @keyframes sp-char-float {
       0%,100% { transform: translateY(0); }
-      50%     { transform: translateY(-10px); }
+      50%     { transform: translateY(-12px); }
     }
     #sp-char-img-1 {
-      width: 58px; height: 68px;
+      width: 84px; height: 100px;
       display: flex; align-items: center; justify-content: center;
-      overflow: hidden;
-      background: linear-gradient(160deg, #EAF3FF 0%, #F0ECFF 100%);
-      border-radius: 12px;
+      overflow: hidden; border-radius: 14px;
     }
     #sp-char-img-2 {
-      width: 58px; height: 68px;
+      width: 84px; height: 100px;
       display: flex; align-items: center; justify-content: center;
-      overflow: hidden;
-      background: linear-gradient(160deg, #FFF0F7 0%, #FFE8F2 100%);
-      border-radius: 12px;
+      overflow: hidden; border-radius: 14px;
     }
-    .sp-char-card .char-svg { display: block; width: 58px !important; height: 68px !important; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.11)) !important; }
-    .sp-char-card .char-img-custom { width: 58px !important; height: 68px !important; }
-    .sp-char-label { font-size: 10px; font-weight: 700; }
+    .sp-char-card .char-svg { display: block; width: 84px !important; height: 100px !important; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.13)) !important; }
+    .sp-char-card .char-img-custom { width: 84px !important; height: 100px !important; object-fit: contain; }
+    .sp-char-label { font-size: 11px; font-weight: 700; letter-spacing: 0.01em; }
     .sp-char-card.c1 .sp-char-label { color: var(--blue); }
     .sp-char-card.c2 .sp-char-label { color: #FF8FA0; }
     .sp-vs-heart {
-      font-size: 26px;
+      font-size: 30px; flex-shrink: 0;
       animation: heartbeat 1.4s ease-in-out infinite;
     }
     .sp-btn {
-      margin-top: 0; padding: 13px 14px; width: 100%;
-      background: linear-gradient(135deg, #5B9BD5 0%, #7BB8E8 100%);
+      margin-top: 2px; padding: 15px 20px; width: 100%;
+      background: linear-gradient(135deg, #5B9BD5 0%, #8EC5F0 100%);
       color: white; border: none; border-radius: 50px;
-      font-size: 14px; font-weight: 700; cursor: pointer;
+      font-size: 15px; font-weight: 700; cursor: pointer;
       display: flex; align-items: center; justify-content: center; gap: 7px;
-      box-shadow: 0 6px 22px rgba(91,155,213,0.5);
+      box-shadow: 0 8px 26px rgba(91,155,213,0.50);
       transition: transform 0.15s, box-shadow 0.15s;
       animation: btn-pulse 2.6s ease-in-out infinite;
       white-space: nowrap;
     }
+    .sp-btn:hover  { transform: translateY(-2px); }
     .sp-btn:active { transform: scale(0.96); }
     @keyframes btn-pulse {
-      0%,100% { box-shadow: 0 6px 22px rgba(91,155,213,0.5); }
-      50%     { box-shadow: 0 8px 30px rgba(91,155,213,0.75); }
+      0%,100% { box-shadow: 0 8px 26px rgba(91,155,213,0.50); }
+      50%     { box-shadow: 0 10px 34px rgba(91,155,213,0.75); }
     }
     .sp-btn-emoji { font-size: 16px; }
     .sp-hint {
@@ -1033,11 +1027,11 @@
     }
     /* ── Mobile safety ── */
     @media (max-width: 360px) {
-      .sp-main-row { gap: 6px; }
-      .sp-char-card { padding: 8px 6px; width: 70px; }
-      .sp-char-card .char-svg { width: 50px !important; height: 59px !important; }
-      #sp-char-img-1, #sp-char-img-2 { width: 50px; height: 59px; }
-      .sp-btn { font-size: 13px; padding: 12px 10px; }
+      .sp-main-row { gap: 12px; }
+      .sp-char-card { padding: 12px 8px 10px; width: 100px; }
+      .sp-char-card .char-svg { width: 70px !important; height: 83px !important; }
+      #sp-char-img-1, #sp-char-img-2 { width: 70px; height: 83px; }
+      .sp-btn { font-size: 14px; padding: 13px 16px; }
     }
   </style>
 </head>
@@ -1079,12 +1073,7 @@
         <div class="sp-char-label" id="sp-name-1">线条小狗·他</div>
       </div>
 
-      <div class="sp-mid">
-        <div class="sp-vs-heart">💙</div>
-        <button class="sp-btn" onclick="startApp()">
-          开始我们的故事
-        </button>
-      </div>
+      <div class="sp-vs-heart">💙</div>
 
       <div class="sp-char-card c2">
         <div id="sp-char-img-2">
@@ -1116,6 +1105,10 @@
         <div class="sp-char-label" id="sp-name-2">线条小狗·她</div>
       </div>
     </div>
+
+    <button class="sp-btn" onclick="startApp()">
+      开始我们的故事
+    </button>
   </div>
 </div>
 
