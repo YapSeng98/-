@@ -17,19 +17,27 @@
   Add: https://yapseng98.github.io
 
   CONFIRMED COLUMN MAPPING (verified against SN tables 2026-06-30):
-  u_love_category : sys_id → id  |  u_emoji → icon  |  u_name → name  |  u_points → pts  |  u_active → active
-  u_love_entry    : sys_id → id  |  u_char → charId  |  u_icon → icon  |  u_points → pts  |  u_note → desc  |  u_month → month  |  u_date → date  |  u_category → catId  |  u_category_name → catName
-  u_love_reward   : sys_id → id  |  u_emoji → icon  |  u_name → name  |  u_points → minPts  |  u_desc → desc
-  u_love_punishment: sys_id → id  |  u_emoji → icon  |  u_name → name  |  u_points → minPts  |  u_desc → desc
-  u_love_monthly  : u_month → month  |  u_char1_pts → char1Pts  |  u_char2_pts → char2Pts  |  u_result_1 → result1  |  u_result_2 → result2  |  u_mode → mode  |  u_settled_at → settledAt
-  u_love_config   : u_mode → mode  |  u_reward_target → rewardTarget  |  u_punish_threshold → punishThreshold
-  u_love_auth     : u_username → username  |  u_char_id → charId  |  u_last_login → lastLogin
+  u_love_category  : sys_id → id  |  u_emoji → icon  |  u_name → name  |  u_points → pts  |  u_active → active  |  u_match → match
+  u_love_entry     : sys_id → id  |  u_char → charId  |  u_icon → icon  |  u_points → pts  |  u_note → desc  |  u_month → month  |  u_date → date  |  u_category → catId  |  u_category_name → catName  |  u_match → match
+  u_love_reward    : sys_id → id  |  u_emoji → icon  |  u_name → name  |  u_points → minPts  |  u_desc → desc  |  u_match → match
+  u_love_punishment: sys_id → id  |  u_emoji → icon  |  u_name → name  |  u_points → minPts  |  u_desc → desc  |  u_match → match
+  u_love_monthly   : u_month → month  |  u_char1_pts → char1Pts  |  u_char2_pts → char2Pts  |  u_result_1 → result1  |  u_result_2 → result2  |  u_mode → mode  |  u_settled_at → settledAt  |  u_match → match
+  u_love_config    : u_mode → mode  |  u_reward_target → rewardTarget  |  u_punish_threshold → punishThreshold  |  u_match → match
+  u_love_auth      : u_username → username  |  u_char_id → charId  |  u_last_login → lastLogin  |  u_match → matchId (Reference → u_love_match)
+  u_love_match     : couple pairing table — one row per couple, sys_id = matchId
+
+  MATCH ARCHITECTURE:
+  - u_love_auth.u_match is a Reference field pointing to u_love_match
+  - All data tables (category, entry, reward, punishment, config, monthly) have u_match Reference field
+  - POST /auth/login returns matchId (from auth.u_match)
+  - GET requests pass ?match=<matchId> → scripts filter by u_match
+  - POST/PUT requests include matchId in body → scripts stamp u_match
 
   AUTH FLOW:
   POST /auth/login  → SN validates Basic Auth (love_score_api:password) automatically.
-                      Script then checks u_love_auth for the username:
-                        match  → return { action:'login',      charId, username }
-                        no match → insert, return { action:'registered', charId, username }
+                      Script checks u_love_auth for the username:
+                        found  → update last_login, return { action:'login',      charId, matchId }
+                        not found → insert new user,   return { action:'registered', charId, matchId:'' }
                         (wrong password is rejected by SN before script runs → 401)
   ============================================================
 */
@@ -38,18 +46,22 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 1: GET /config
    HTTP Method: GET  |  Path: /config
+   Query param: match (sys_id of u_love_match)
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
+    var matchId = request.queryParams.match;
     var gr = new GlideRecord('u_love_config');
+    if (matchId) gr.addQuery('u_match', matchId);
     gr.query();
     if (gr.next()) {
         response.setBody({ result: {
             mode:             gr.getValue('u_mode') || 'reward',
             rewardTarget:     parseInt(gr.getValue('u_reward_target'))   || 100,
             punishThreshold:  parseInt(gr.getValue('u_punish_threshold')) || -80,
+            matchId:          gr.getValue('u_match') || '',
         }});
     } else {
-        response.setBody({ result: { mode: 'reward', rewardTarget: 100, punishThreshold: -80 } });
+        response.setBody({ result: { mode: 'reward', rewardTarget: 100, punishThreshold: -80, matchId: '' } });
     }
 })(request, response);
 
@@ -57,12 +69,15 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 2: PUT /config
    HTTP Method: PUT  |  Path: /config
+   Body: { mode, rewardTarget, punishThreshold, matchId }
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var body = request.body.data;
+    var body    = request.body.data;
+    var matchId = body.matchId || '';
     var gr = new GlideRecord('u_love_config');
+    if (matchId) gr.addQuery('u_match', matchId);
     gr.query();
-    if (!gr.next()) { gr.initialize(); }
+    if (!gr.next()) { gr.initialize(); if (matchId) gr.setValue('u_match', matchId); }
 
     if (body.mode             !== undefined) gr.setValue('u_mode',             body.mode);
     if (body.rewardTarget     !== undefined) gr.setValue('u_reward_target',    body.rewardTarget);
@@ -75,9 +90,12 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 3: GET /categories
    HTTP Method: GET  |  Path: /categories
+   Query param: match (sys_id of u_love_match)
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
+    var matchId = request.queryParams.match;
     var gr = new GlideRecord('u_love_category');
+    if (matchId) gr.addQuery('u_match', matchId);
     gr.orderBy('u_name');
     gr.query();
     var cats = [];
@@ -97,11 +115,12 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 4: GET /entries
    HTTP Method: GET  |  Path: /entries
-   Query param: month (YYYY-MM), defaults to current month
+   Query params: month (YYYY-MM, defaults to current), match (matchId)
    Returns only unsettled entries (u_monthly IS EMPTY)
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var month = request.queryParams.month;
+    var month   = request.queryParams.month;
+    var matchId = request.queryParams.match;
     if (!month) {
         var d = new GlideDateTime();
         month = d.getLocalDate().substring(0, 7);
@@ -109,6 +128,7 @@
 
     var gr = new GlideRecord('u_love_entry');
     gr.addQuery('u_month', month);
+    if (matchId) gr.addQuery('u_match', matchId);
     gr.addNullQuery('u_monthly');
     gr.orderByDesc('u_date');
     gr.query();
@@ -134,9 +154,11 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 5: POST /entries
    HTTP Method: POST  |  Path: /entries
+   Body: { charId, catId, catName, icon, pts, desc, month, date, matchId }
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var body = request.body.data;
+    var body    = request.body.data;
+    var matchId = body.matchId || '';
     var gr = new GlideRecord('u_love_entry');
     gr.initialize();
     gr.setValue('u_char',          body.charId   || 'char1');
@@ -148,6 +170,7 @@
     gr.setValue('u_note',          body.desc     || '');
     gr.setValue('u_month',         body.month    || '');
     gr.setValue('u_date',          body.date     || new GlideDateTime().getLocalDate());
+    if (matchId) gr.setValue('u_match', matchId);
     var sysId = gr.insert();
 
     response.setBody({ result: { id: sysId, success: true } });
@@ -200,9 +223,12 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 8: GET /rewards
    HTTP Method: GET  |  Path: /rewards
+   Query param: match (matchId)
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
+    var matchId = request.queryParams.match;
     var gr = new GlideRecord('u_love_reward');
+    if (matchId) gr.addQuery('u_match', matchId);
     gr.orderBy('u_points');
     gr.query();
     var list = [];
@@ -222,9 +248,12 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 9: GET /punishments
    HTTP Method: GET  |  Path: /punishments
+   Query param: match (matchId)
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
+    var matchId = request.queryParams.match;
     var gr = new GlideRecord('u_love_punishment');
+    if (matchId) gr.addQuery('u_match', matchId);
     gr.orderBy('u_points');
     gr.query();
     var list = [];
@@ -244,9 +273,12 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 10: GET /history
    HTTP Method: GET  |  Path: /history
+   Query param: match (matchId)
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
+    var matchId = request.queryParams.match;
     var gr = new GlideRecord('u_love_monthly');
+    if (matchId) gr.addQuery('u_match', matchId);
     gr.orderByDesc('u_month');
     gr.setLimit(24);
     gr.query();
@@ -269,26 +301,30 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 11: POST /monthly/settle
    HTTP Method: POST  |  Path: /monthly/settle
+   Body: { month, char1Pts, char2Pts, mode, result1, result2, matchId }
    Writes monthly summary + stamps all entries for that month
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var body = request.body.data;
+    var body    = request.body.data;
+    var matchId = body.matchId || '';
 
     // 1. Write the monthly summary record
     var gr = new GlideRecord('u_love_monthly');
     gr.initialize();
-    gr.setValue('u_month',      body.month            || '');
+    gr.setValue('u_month',      body.month              || '');
     gr.setValue('u_char1_pts',  parseInt(body.char1Pts) || 0);
     gr.setValue('u_char2_pts',  parseInt(body.char2Pts) || 0);
-    gr.setValue('u_mode',       body.mode             || 'reward');
-    gr.setValue('u_result_1',   body.result1          || '');
-    gr.setValue('u_result_2',   body.result2          || '');
+    gr.setValue('u_mode',       body.mode               || 'reward');
+    gr.setValue('u_result_1',   body.result1            || '');
+    gr.setValue('u_result_2',   body.result2            || '');
     gr.setValue('u_settled_at', new GlideDateTime().toString());
+    if (matchId) gr.setValue('u_match', matchId);
     var monthSysId = gr.insert();
 
     // 2. Stamp all unsettled entries for this month with the monthly record
     var entryGr = new GlideRecord('u_love_entry');
     entryGr.addQuery('u_month', body.month);
+    if (matchId) entryGr.addQuery('u_match', matchId);
     entryGr.addNullQuery('u_monthly');
     entryGr.query();
     while (entryGr.next()) {
@@ -303,15 +339,18 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 12: POST /categories
    HTTP Method: POST  |  Path: /categories
+   Body: { icon, name, pts, active, matchId }
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var body = request.body.data;
+    var body    = request.body.data;
+    var matchId = body.matchId || '';
     var gr = new GlideRecord('u_love_category');
     gr.initialize();
     gr.setValue('u_emoji',  body.icon   || '📌');
     gr.setValue('u_name',   body.name   || '');
     gr.setValue('u_points', parseInt(body.pts) || 0);
     gr.setValue('u_active', body.active !== false);
+    if (matchId) gr.setValue('u_match', matchId);
     var sysId = gr.insert();
     response.setBody({ result: { id: sysId, success: true } });
     response.setStatus(201);
@@ -360,15 +399,18 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 15: POST /rewards
    HTTP Method: POST  |  Path: /rewards
+   Body: { icon, name, minPts, desc, matchId }
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var body = request.body.data;
+    var body    = request.body.data;
+    var matchId = body.matchId || '';
     var gr = new GlideRecord('u_love_reward');
     gr.initialize();
     gr.setValue('u_emoji',  body.icon    || '🎁');
     gr.setValue('u_name',   body.name    || '');
     gr.setValue('u_points', parseInt(body.minPts) || 0);
     gr.setValue('u_desc',   body.desc    || '');
+    if (matchId) gr.setValue('u_match', matchId);
     var sysId = gr.insert();
     response.setBody({ result: { id: sysId, success: true } });
     response.setStatus(201);
@@ -417,15 +459,18 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 18: POST /punishments
    HTTP Method: POST  |  Path: /punishments
+   Body: { icon, name, minPts, desc, matchId }
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var body = request.body.data;
+    var body    = request.body.data;
+    var matchId = body.matchId || '';
     var gr = new GlideRecord('u_love_punishment');
     gr.initialize();
     gr.setValue('u_emoji',  body.icon    || '😈');
     gr.setValue('u_name',   body.name    || '');
     gr.setValue('u_points', parseInt(body.minPts) || 0);
     gr.setValue('u_desc',   body.desc    || '');
+    if (matchId) gr.setValue('u_match', matchId);
     var sysId = gr.insert();
     response.setBody({ result: { id: sysId, success: true } });
     response.setStatus(201);
@@ -477,12 +522,11 @@
    ─────────────────────────────────────────────────────────
    SN validates Basic Auth (love_score_api:password) before
    this script runs — wrong password → automatic 401.
-   Script only handles the u_love_auth table logic.
+   Script handles u_love_auth lookup + u_love_match lookup.
 
-   NEW TABLE REQUIRED: u_love_auth
-     u_username  String(100)
-     u_char_id   String(10)    "char1" or "char2"
-     u_last_login  Date/Time
+   TABLES:
+     u_love_auth  : u_username, u_char_id, u_last_login, u_match (Ref → u_love_match)
+     u_love_match : couple pairing table (sys_id = matchId)
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var body     = request.body && request.body.data;
@@ -500,18 +544,23 @@
     gr.query();
 
     if (gr.next()) {
-        // User already registered — return stored charId
+        // User found — update last_login and return their matchId
         gr.setValue('u_last_login', new GlideDateTime());
         gr.update();
+
+        // u_love_auth.u_match is a Reference field → getValue returns the match sys_id
+        var matchId = gr.getValue('u_match') || '';
+
         response.setStatus(200);
         response.setBody({ result: {
             success:  true,
             action:   'login',
             username: gr.getValue('u_username'),
-            charId:   gr.getValue('u_char_id')
+            charId:   gr.getValue('u_char_id'),
+            matchId:  matchId
         }});
     } else {
-        // First time — register this name
+        // New user — auto-register (admin must link them to a match in SN)
         var newGr = new GlideRecord('u_love_auth');
         newGr.initialize();
         newGr.setValue('u_username',   username);
@@ -523,7 +572,8 @@
             success:  true,
             action:   'registered',
             username: username,
-            charId:   charId
+            charId:   charId,
+            matchId:  ''
         }});
     }
 })(request, response);

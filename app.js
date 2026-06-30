@@ -8,7 +8,6 @@ const App = (() => {
   /* ── Config ── */
   const SN_API_PATH = '/api/x_887486_love_app/love_score';
   const SN_INSTANCE = 'dev405150.service-now.com';
-  const SN_API_USER = 'love_score_api';
 
   /* ── State ── */
   let S = {
@@ -31,6 +30,7 @@ const App = (() => {
     snInstance: '',
     authHeader: '',
     usingSN: false,
+    matchId: '',
     historyRecords: [],
   };
 
@@ -39,12 +39,13 @@ const App = (() => {
   const monthKey = (d = now()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
   const monthLabel = (k) => { const [y,m] = k.split('-'); return `${y} 年 ${parseInt(m)} 月`; };
 
-  function snUrl(path) {
-    return `https://${S.snInstance}${SN_API_PATH}${path}`;
-  }
-
   async function snFetch(path, opts = {}) {
-    const res = await fetch(snUrl(path), {
+    const method = (opts.method || 'GET').toUpperCase();
+    let url = `https://${S.snInstance}${SN_API_PATH}${path}`;
+    if (method === 'GET' && S.matchId) {
+      url += (path.includes('?') ? '&' : '?') + 'match=' + S.matchId;
+    }
+    const res = await fetch(url, {
       headers: { 'Authorization': S.authHeader, 'Content-Type': 'application/json', 'Accept': 'application/json' },
       ...opts,
     });
@@ -112,6 +113,7 @@ const App = (() => {
         S.mode            = cfg.mode          || 'reward';
         S.rewardTarget    = cfg.rewardTarget  || 100;
         S.punishThreshold = cfg.punishThreshold || -80;
+        if (cfg.matchId)  S.matchId = cfg.matchId; // matchId from config row's u_match field
         S.categories      = await snFetch('/categories');
         S.rewards         = await snFetch('/rewards');
         S.punishments     = await snFetch('/punishments');
@@ -137,7 +139,7 @@ const App = (() => {
     },
 
     async addEntry(entry) {
-      if (S.usingSN) return snFetch('/entries', { method:'POST', body: JSON.stringify(entry) });
+      if (S.usingSN) return snFetch('/entries', { method:'POST', body: JSON.stringify({ ...entry, matchId: S.matchId }) });
       const d = LS.load();
       if (!d.entries[entry.month]) d.entries[entry.month] = [];
       const e = { ...entry, id: 'e'+Date.now() };
@@ -171,7 +173,7 @@ const App = (() => {
     async settleMonth(month, char1Pts, char2Pts, mode, result1, result2) {
       if (S.usingSN) return snFetch('/monthly/settle', {
         method: 'POST',
-        body: JSON.stringify({ month, char1Pts, char2Pts, mode, result1, result2 }),
+        body: JSON.stringify({ month, char1Pts, char2Pts, mode, result1, result2, matchId: S.matchId }),
       });
       const d = LS.load();
       d.history = d.history || [];
@@ -181,7 +183,7 @@ const App = (() => {
     },
 
     async saveConfig(cfg) {
-      if (S.usingSN) return snFetch('/config', { method:'PUT', body: JSON.stringify(cfg) });
+      if (S.usingSN) return snFetch('/config', { method:'PUT', body: JSON.stringify({ ...cfg, matchId: S.matchId }) });
       const d = LS.load();
       const { entries, history, categories, rewards, punishments, ...rest } = cfg;
       Object.assign(d, rest);
@@ -198,7 +200,7 @@ const App = (() => {
 
     async addItem(type, data) {
       if (S.usingSN) {
-        const r = await snFetch(this._endpoint(type), { method:'POST', body: JSON.stringify(data) });
+        const r = await snFetch(this._endpoint(type), { method:'POST', body: JSON.stringify({ ...data, matchId: S.matchId }) });
         return r;
       }
       const d = LS.load();
@@ -542,11 +544,12 @@ const App = (() => {
     const password = document.getElementById('sn-password').value;
     const charId   = document.querySelector('input[name="sn-char"]:checked')?.value || 'char1';
 
-    if (!username) { _loginErr('请输入你的姓名'); return; }
-    if (!password) { _loginErr('请输入密码');     return; }
+    if (!username) { _loginErr('请输入账号'); return; }
+    if (!password) { _loginErr('请输入密码'); return; }
 
+    // Build Basic Auth with the individual SN user's own credentials (PFMT pattern)
     S.snInstance = SN_INSTANCE;
-    S.authHeader = 'Basic ' + btoa(`${SN_API_USER}:${password}`);
+    S.authHeader = 'Basic ' + btoa(`${username}:${password}`);
     S.usingSN    = true;
 
     const btn = document.getElementById('sn-connect-btn');
@@ -554,31 +557,25 @@ const App = (() => {
     _loginErr('');
 
     try {
-      // Validate password + look up / register this user in u_love_auth
-      const result = await snFetch('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ username, charId }),
-      });
+      // Validate by loading config — if credentials are wrong SN returns 401 automatically
+      await Data.init();
 
-      S.activeChar = result.charId || charId;
-      const displayName = result.username || username;
+      S.activeChar = charId;
 
       localStorage.setItem('sn_auth',     S.authHeader);
-      localStorage.setItem('sn_username', displayName);
+      localStorage.setItem('sn_username', username);
       localStorage.setItem('sn_char',     S.activeChar);
+      localStorage.setItem('sn_match',    S.matchId);
 
-      await Data.init();
       await refresh();
       document.getElementById('setup-overlay').classList.add('hidden');
-
-      const action = result.action === 'registered' ? '🎉 注册成功，欢迎 ' : '✅ 欢迎回来，';
-      showToast(action + displayName + '！');
+      showToast('✅ 欢迎回来，' + username + '！');
     } catch (err) {
       S.usingSN    = false;
       S.authHeader = '';
-      const msg = err.message.includes('401') ? '密码错误，请重试' : '连接失败: ' + err.message;
+      const msg = err.message.includes('401') ? '账号或密码错误，请重试' : '连接失败: ' + err.message;
       _loginErr(msg);
-      if (btn) { btn.disabled = false; btn.textContent = '登录 / 注册'; }
+      if (btn) { btn.disabled = false; btn.textContent = '登录'; }
     }
   }
 
@@ -949,6 +946,7 @@ const App = (() => {
     localStorage.removeItem('sn_auth');
     localStorage.removeItem('sn_username');
     localStorage.removeItem('sn_char');
+    localStorage.removeItem('sn_match');
     location.reload();
   }
 
@@ -1202,7 +1200,8 @@ const App = (() => {
     if (savedAuth) {
       S.snInstance = SN_INSTANCE;
       S.authHeader = savedAuth;
-      S.activeChar = localStorage.getItem('sn_char') || 'char1';
+      S.activeChar = localStorage.getItem('sn_char')  || 'char1';
+      S.matchId    = localStorage.getItem('sn_match') || '';
       S.usingSN    = true;
       try {
         await Data.init();
@@ -1213,6 +1212,7 @@ const App = (() => {
         localStorage.removeItem('sn_auth');
         localStorage.removeItem('sn_username');
         localStorage.removeItem('sn_char');
+        localStorage.removeItem('sn_match');
         await Data.init();
         await refresh();
       }
@@ -1223,23 +1223,11 @@ const App = (() => {
       await refresh();
     }
 
-    /* populate start page with rendered characters + names */
-    const w1 = document.getElementById('char-img-wrap-1');
-    const w2 = document.getElementById('char-img-wrap-2');
-    const s1 = document.getElementById('sp-char-img-1');
-    const s2 = document.getElementById('sp-char-img-2');
-    function cloneNoIds(src) {
-      const t = document.createElement('div');
-      t.innerHTML = src.innerHTML;
-      t.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-      return t.innerHTML;
-    }
-    if (s1 && w1) s1.innerHTML = cloneNoIds(w1);
-    if (s2 && w2) s2.innerHTML = cloneNoIds(w2);
+    /* update start page names (SVGs are embedded directly in HTML) */
     const sn1 = document.getElementById('sp-name-1');
     const sn2 = document.getElementById('sp-name-2');
-    if (sn1) sn1.textContent = S.charName1 || 'Pochacco';
-    if (sn2) sn2.textContent = S.charName2 || '阿呆';
+    if (sn1) sn1.textContent = S.charName1 || '线条小狗·他';
+    if (sn2) sn2.textContent = S.charName2 || '线条小狗·她';
   }
 
   document.addEventListener('DOMContentLoaded', boot);
@@ -1267,11 +1255,13 @@ const App = (() => {
 function startApp() {
   Music.toggle();
   const sp = document.getElementById('start-page');
+  if (!sp) return;
   sp.classList.add('sp-exiting');
-  sp.addEventListener('animationend', () => {
-    sp.remove();
 
-    // Pre-fill login form if user was previously logged in
+  function showLogin() {
+    const el = document.getElementById('start-page');
+    if (el) el.remove();
+
     const savedName = localStorage.getItem('sn_username');
     const savedChar = localStorage.getItem('sn_char') || 'char1';
     if (savedName) {
@@ -1280,12 +1270,14 @@ function startApp() {
       const radio = document.querySelector(`input[name="sn-char"][value="${savedChar}"]`);
       if (radio) radio.checked = true;
       const btn = document.getElementById('sn-connect-btn');
-      if (btn) btn.textContent = `继续 (${savedName})`;
+      if (btn) btn.textContent = `继续 (${savedName}) →`;
     }
 
-    // Always show login page — user must confirm identity each session
     document.getElementById('setup-overlay').classList.remove('hidden');
-  }, { once: true });
+  }
+
+  sp.addEventListener('animationend', showLogin, { once: true });
+  setTimeout(showLogin, 800); // fallback if animationend doesn't fire
 }
 
 /* ── Background music (local MP3) ── */

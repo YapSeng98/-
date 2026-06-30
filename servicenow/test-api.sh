@@ -1,14 +1,16 @@
 #!/bin/bash
 # ============================================================
-# 恋爱积分簿 — Full API Test Script
-# Run: bash servicenow/test-api.sh
+# 恋爱积分簿 — Full API Test Script (with match architecture)
+# Run: bash servicenow/test-api.sh <username> [password]
+# Example: bash servicenow/test-api.sh CS mypassword
 # ============================================================
 
 INSTANCE="dev405150.service-now.com"
 USER="love_score_api"
-PASS="${1:-}"   # pass PIN as first arg: bash test-api.sh yourPIN
+TEST_USERNAME="${1:-TestBot}"
+PASS="${2:-}"
 if [ -z "$PASS" ]; then
-  read -rsp "Enter love_score_api PIN: " PASS
+  read -rsp "Enter love_score_api password: " PASS
   echo ""
 fi
 
@@ -19,6 +21,7 @@ HEADERS=(-H "Authorization: Basic ${AUTH}" -H "Content-Type: application/json" -
 PASS_COUNT=0
 FAIL_COUNT=0
 CREATED_ENTRY_ID=""
+MATCH_ID=""
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -34,13 +37,32 @@ echo "============================================================"
 echo "  恋爱积分簿 — API Full Test"
 echo "  Instance : ${INSTANCE}"
 echo "  User     : ${USER}"
+echo "  Login as : ${TEST_USERNAME}"
 echo "  Base URL : ${BASE}"
 echo "============================================================"
 echo ""
 
+# ── TEST 0: POST /auth/login ─────────────────────────────────
+echo "TEST 0: POST /auth/login (get matchId)"
+RES=$(curl -s -w "\n%{http_code}" -X POST "${BASE}/auth/login" "${HEADERS[@]}" \
+  -d "{\"username\":\"${TEST_USERNAME}\",\"charId\":\"char1\"}")
+HTTP=$(echo "$RES" | tail -1)
+BODY=$(echo "$RES" | head -1)
+MATCH_ID=$(echo "$BODY" | grep -o '"matchId":"[^"]*"' | cut -d'"' -f4)
+ACTION=$(echo "$BODY" | grep -o '"action":"[^"]*"' | cut -d'"' -f4)
+if [ "$HTTP" = "200" ] || [ "$HTTP" = "201" ]; then
+  pass "POST /auth/login → HTTP $HTTP | action=${ACTION} | matchId=${MATCH_ID:-<empty>}"
+  info "$BODY"
+else
+  fail "POST /auth/login → HTTP $HTTP"
+  info "$BODY"
+fi
+echo ""
+
 # ── TEST 1: GET /config ──────────────────────────────────────
 echo "TEST 1: GET /config"
-RES=$(curl -s -w "\n%{http_code}" "${BASE}/config" "${HEADERS[@]}")
+QMATCH="${MATCH_ID:+?match=${MATCH_ID}}"
+RES=$(curl -s -w "\n%{http_code}" "${BASE}/config${QMATCH}" "${HEADERS[@]}")
 HTTP=$(echo "$RES" | tail -1)
 BODY=$(echo "$RES" | head -1)
 if [ "$HTTP" = "200" ]; then
@@ -54,8 +76,10 @@ echo ""
 
 # ── TEST 2: PUT /config ──────────────────────────────────────
 echo "TEST 2: PUT /config"
-RES=$(curl -s -w "\n%{http_code}" -X PUT "${BASE}/config" "${HEADERS[@]}" \
-  -d '{"mode":"reward","rewardTarget":100,"punishThreshold":-80}')
+MBODY="{\"mode\":\"reward\",\"rewardTarget\":100,\"punishThreshold\":-80"
+[ -n "$MATCH_ID" ] && MBODY="${MBODY},\"matchId\":\"${MATCH_ID}\""
+MBODY="${MBODY}}"
+RES=$(curl -s -w "\n%{http_code}" -X PUT "${BASE}/config" "${HEADERS[@]}" -d "$MBODY")
 HTTP=$(echo "$RES" | tail -1)
 BODY=$(echo "$RES" | head -1)
 if [ "$HTTP" = "200" ]; then
@@ -69,7 +93,7 @@ echo ""
 
 # ── TEST 3: GET /categories ──────────────────────────────────
 echo "TEST 3: GET /categories"
-RES=$(curl -s -w "\n%{http_code}" "${BASE}/categories" "${HEADERS[@]}")
+RES=$(curl -s -w "\n%{http_code}" "${BASE}/categories${QMATCH}" "${HEADERS[@]}")
 HTTP=$(echo "$RES" | tail -1)
 BODY=$(echo "$RES" | head -1)
 COUNT=$(echo "$BODY" | grep -o '"id"' | wc -l | tr -d ' ')
@@ -84,7 +108,7 @@ echo ""
 
 # ── TEST 4: GET /rewards ─────────────────────────────────────
 echo "TEST 4: GET /rewards"
-RES=$(curl -s -w "\n%{http_code}" "${BASE}/rewards" "${HEADERS[@]}")
+RES=$(curl -s -w "\n%{http_code}" "${BASE}/rewards${QMATCH}" "${HEADERS[@]}")
 HTTP=$(echo "$RES" | tail -1)
 BODY=$(echo "$RES" | head -1)
 COUNT=$(echo "$BODY" | grep -o '"id"' | wc -l | tr -d ' ')
@@ -99,7 +123,7 @@ echo ""
 
 # ── TEST 5: GET /punishments ─────────────────────────────────
 echo "TEST 5: GET /punishments"
-RES=$(curl -s -w "\n%{http_code}" "${BASE}/punishments" "${HEADERS[@]}")
+RES=$(curl -s -w "\n%{http_code}" "${BASE}/punishments${QMATCH}" "${HEADERS[@]}")
 HTTP=$(echo "$RES" | tail -1)
 BODY=$(echo "$RES" | head -1)
 COUNT=$(echo "$BODY" | grep -o '"id"' | wc -l | tr -d ' ')
@@ -112,17 +136,19 @@ else
 fi
 echo ""
 
-# ── TEST 6: POST /entries (STORE to SN) ──────────────────────
+# ── TEST 6: POST /entries ────────────────────────────────────
 echo "TEST 6: POST /entries — store a test entry in SN"
 TODAY=$(date +%Y-%m-%d)
 MONTH=$(date +%Y-%m)
-RES=$(curl -s -w "\n%{http_code}" -X POST "${BASE}/entries" "${HEADERS[@]}" \
-  -d "{\"charId\":\"char1\",\"catId\":\"\",\"catName\":\"API Test 🧪\",\"icon\":\"🧪\",\"pts\":5,\"desc\":\"Auto test entry\",\"month\":\"${MONTH}\",\"date\":\"${TODAY}\"}")
+EBODY="{\"charId\":\"char1\",\"catId\":\"\",\"catName\":\"API Test 🧪\",\"icon\":\"🧪\",\"pts\":5,\"desc\":\"Auto test entry\",\"month\":\"${MONTH}\",\"date\":\"${TODAY}\""
+[ -n "$MATCH_ID" ] && EBODY="${EBODY},\"matchId\":\"${MATCH_ID}\""
+EBODY="${EBODY}}"
+RES=$(curl -s -w "\n%{http_code}" -X POST "${BASE}/entries" "${HEADERS[@]}" -d "$EBODY")
 HTTP=$(echo "$RES" | tail -1)
 BODY=$(echo "$RES" | head -1)
 CREATED_ENTRY_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
 if [ "$HTTP" = "201" ] && [ -n "$CREATED_ENTRY_ID" ]; then
-  pass "POST /entries → HTTP $HTTP | Created entry ID: ${CREATED_ENTRY_ID}"
+  pass "POST /entries → HTTP $HTTP | Created ID: ${CREATED_ENTRY_ID}"
   info "$BODY"
 else
   fail "POST /entries → HTTP $HTTP"
@@ -130,14 +156,16 @@ else
 fi
 echo ""
 
-# ── TEST 7: GET /entries (RETRIEVE from SN) ──────────────────
+# ── TEST 7: GET /entries ─────────────────────────────────────
 echo "TEST 7: GET /entries — retrieve entries from SN"
-RES=$(curl -s -w "\n%{http_code}" "${BASE}/entries?month=${MONTH}" "${HEADERS[@]}")
+QMONTH="?month=${MONTH}"
+[ -n "$MATCH_ID" ] && QMONTH="${QMONTH}&match=${MATCH_ID}"
+RES=$(curl -s -w "\n%{http_code}" "${BASE}/entries${QMONTH}" "${HEADERS[@]}")
 HTTP=$(echo "$RES" | tail -1)
 BODY=$(echo "$RES" | head -1)
 FOUND=$(echo "$BODY" | grep -o '"API Test' | wc -l | tr -d ' ')
 if [ "$HTTP" = "200" ] && [ "$FOUND" -ge "1" ]; then
-  pass "GET /entries → HTTP $HTTP | Test entry found in SN ✅"
+  pass "GET /entries → HTTP $HTTP | Test entry found ✅"
   info "$BODY"
 else
   fail "GET /entries → HTTP $HTTP | Test entry NOT found"
@@ -146,7 +174,7 @@ fi
 echo ""
 
 # ── TEST 8: PUT /entries/{id} ────────────────────────────────
-echo "TEST 8: PUT /entries/${CREATED_ENTRY_ID} — update entry in SN"
+echo "TEST 8: PUT /entries/${CREATED_ENTRY_ID} — update entry"
 if [ -n "$CREATED_ENTRY_ID" ]; then
   RES=$(curl -s -w "\n%{http_code}" -X PUT "${BASE}/entries/${CREATED_ENTRY_ID}" "${HEADERS[@]}" \
     -d '{"desc":"Updated by test","pts":10}')
@@ -166,7 +194,7 @@ echo ""
 
 # ── TEST 9: GET /history ─────────────────────────────────────
 echo "TEST 9: GET /history"
-RES=$(curl -s -w "\n%{http_code}" "${BASE}/history" "${HEADERS[@]}")
+RES=$(curl -s -w "\n%{http_code}" "${BASE}/history${QMATCH}" "${HEADERS[@]}")
 HTTP=$(echo "$RES" | tail -1)
 BODY=$(echo "$RES" | head -1)
 if [ "$HTTP" = "200" ]; then
@@ -179,13 +207,13 @@ fi
 echo ""
 
 # ── TEST 10: DELETE /entries/{id} (cleanup) ──────────────────
-echo "TEST 10: DELETE /entries/${CREATED_ENTRY_ID} — cleanup test entry"
+echo "TEST 10: DELETE /entries/${CREATED_ENTRY_ID} — cleanup"
 if [ -n "$CREATED_ENTRY_ID" ]; then
   RES=$(curl -s -w "\n%{http_code}" -X DELETE "${BASE}/entries/${CREATED_ENTRY_ID}" "${HEADERS[@]}")
   HTTP=$(echo "$RES" | tail -1)
   BODY=$(echo "$RES" | head -1)
   if [ "$HTTP" = "200" ]; then
-    pass "DELETE /entries/{id} → HTTP $HTTP | Test entry cleaned up"
+    pass "DELETE /entries/{id} → HTTP $HTTP | Cleaned up ✅"
     info "$BODY"
   else
     fail "DELETE /entries/{id} → HTTP $HTTP"
@@ -207,9 +235,9 @@ else
   echo -e "${RED}⚠️  ${FAIL_COUNT} test(s) failed — check the output above.${NC}"
   echo ""
   echo "Common causes:"
-  echo "  401 → wrong username/password for love_score_api"
+  echo "  401 → wrong password for love_score_api"
   echo "  403 → user missing rest_service role"
-  echo "  404 → wrong API path or resource not created"
-  echo "  0   → CORS or network issue (try from terminal, not browser)"
+  echo "  404 → wrong API path or resource not created in SN"
+  echo "  matchId empty → u_love_auth.u_match not linked in SN yet"
 fi
 echo ""
