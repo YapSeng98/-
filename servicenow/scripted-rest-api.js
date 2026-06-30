@@ -56,7 +56,7 @@
    INLINE AUTH HELPER (copy this block into resources 1–20)
    ═══════════════════════════════════════════════════════════
    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-   var _au = new GlideRecord('u_love_auth');
+   var _au = new GlideRecord('x_887486_love_app_u_love_auth');
    _au.addQuery('u_api_key', _tok);
    _au.query();
    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -71,7 +71,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -100,7 +100,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -127,7 +127,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -160,7 +160,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -205,7 +205,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -238,7 +238,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -270,7 +270,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -294,7 +294,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -325,7 +325,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -356,7 +356,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -391,7 +391,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -433,7 +433,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -460,7 +460,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -489,7 +489,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -514,7 +514,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -541,7 +541,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -570,7 +570,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -595,7 +595,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -622,7 +622,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -651,7 +651,7 @@
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
-    var _au = new GlideRecord('u_love_auth');
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
@@ -694,7 +694,7 @@
     }
 
     // Check if username already taken
-    var existing = new GlideRecord('u_love_auth');
+    var existing = new GlideRecord('x_887486_love_app_u_love_auth');
     existing.addQuery('u_username', username);
     existing.query();
     if (existing.next()) {
@@ -733,7 +733,7 @@
     }
 
     // Create u_love_auth record
-    var authGr = new GlideRecord('u_love_auth');
+    var authGr = new GlideRecord('x_887486_love_app_u_love_auth');
     authGr.initialize();
     authGr.setValue('u_username',   username);
     authGr.setValue('u_password',   password);
@@ -793,7 +793,7 @@
         return;
     }
 
-    var gr = new GlideRecord('u_love_auth');
+    var gr = new GlideRecord('x_887486_love_app_u_love_auth');
     gr.addQuery('u_username', username);
     gr.query();
 
