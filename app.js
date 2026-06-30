@@ -136,6 +136,8 @@ const App = (() => {
           S.punishThreshold = cfg.punishThreshold || -80;
           S.needsSetup      = false;
         }
+        if (cfg.char1Name) { S.charName1 = cfg.char1Name; localStorage.setItem('sn_charname1', cfg.char1Name); }
+        if (cfg.char2Name) { S.charName2 = cfg.char2Name; localStorage.setItem('sn_charname2', cfg.char2Name); }
         S.categories      = await snFetch('/categories');
         S.rewards         = await snFetch('/rewards');
         S.punishments     = await snFetch('/punishments');

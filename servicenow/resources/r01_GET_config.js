@@ -7,6 +7,20 @@
     if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
     var matchId = _au.getValue('u_match') || '';
 
+    // Fetch both users' names for this match
+    var char1Name = '';
+    var char2Name = '';
+    if (matchId) {
+        var nameGr = new GlideRecord('x_887486_love_app_u_love_auth');
+        nameGr.addQuery('u_match', matchId);
+        nameGr.query();
+        while (nameGr.next()) {
+            var cId = nameGr.getValue('u_char_id') || 'char1';
+            if (cId === 'char1') char1Name = nameGr.getValue('u_username') || '';
+            else                 char2Name = nameGr.getValue('u_username') || '';
+        }
+    }
+
     var gr = new GlideRecord('x_887486_love_app_u_love_config');
     if (matchId) gr.addQuery('u_match', matchId);
     gr.query();
@@ -16,8 +30,10 @@
             mode:            gr.getValue('u_mode') || 'reward',
             rewardTarget:    parseInt(gr.getValue('u_reward_target'))    || 100,
             punishThreshold: parseInt(gr.getValue('u_punish_threshold')) || -80,
+            char1Name:       char1Name,
+            char2Name:       char2Name,
         });
     } else {
-        response.setBody({ configured: false });
+        response.setBody({ configured: false, char1Name: char1Name, char2Name: char2Name });
     }
 })(request, response);
