@@ -979,13 +979,16 @@
     .sp-char-card.c2 {
       background: white; border: 2.5px solid #FF8FA0;
       box-shadow: 0 6px 22px rgba(255,143,160,0.28);
-      animation: sp-char-float 3.0s ease-in-out infinite 0.8s;
+      animation: sp-char-float 3.0s ease-in-out infinite;
     }
     @keyframes sp-char-float {
       0%,100% { transform: translateY(0); }
-      50%     { transform: translateY(-8px); }
+      50%     { transform: translateY(-10px); }
     }
-    .sp-char-card .char-svg { width: 58px !important; height: 68px !important; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.11)) !important; }
+    #sp-char-img-1, #sp-char-img-2 {
+      display: flex; align-items: center; justify-content: center;
+    }
+    .sp-char-card .char-svg { display: block; width: 58px !important; height: 68px !important; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.11)) !important; }
     .sp-char-card .char-img-custom { width: 58px !important; height: 68px !important; }
     .sp-char-label { font-size: 10px; font-weight: 700; }
     .sp-char-card.c1 .sp-char-label { color: var(--blue); }
