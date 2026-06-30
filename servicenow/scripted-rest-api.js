@@ -77,6 +77,27 @@
     if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
     var matchId = _au.getValue('u_match') || '';
 
+    // Fetch both users' names and profile pictures for this match
+    var char1Name = '';
+    var char2Name = '';
+    var charImg1  = '';
+    var charImg2  = '';
+    if (matchId) {
+        var nameGr = new GlideRecord('x_887486_love_app_u_love_auth');
+        nameGr.addQuery('u_match', matchId);
+        nameGr.query();
+        while (nameGr.next()) {
+            var cId = nameGr.getValue('u_char_id') || 'char1';
+            if (cId === 'char1') {
+                char1Name = nameGr.getValue('u_username')        || '';
+                charImg1  = nameGr.getValue('u_profile_picture') || '';
+            } else {
+                char2Name = nameGr.getValue('u_username')        || '';
+                charImg2  = nameGr.getValue('u_profile_picture') || '';
+            }
+        }
+    }
+
     var gr = new GlideRecord('x_887486_love_app_u_love_config');
     if (matchId) gr.addQuery('u_match', matchId);
     gr.query();
@@ -86,9 +107,13 @@
             mode:            gr.getValue('u_mode') || 'reward',
             rewardTarget:    parseInt(gr.getValue('u_reward_target'))    || 100,
             punishThreshold: parseInt(gr.getValue('u_punish_threshold')) || -80,
+            char1Name:       char1Name,
+            char2Name:       char2Name,
+            charImg1:        charImg1,
+            charImg2:        charImg2,
         });
     } else {
-        response.setBody({ configured: false });
+        response.setBody({ configured: false, char1Name: char1Name, char2Name: char2Name, charImg1: charImg1, charImg2: charImg2 });
     }
 })(request, response);
 
@@ -815,4 +840,29 @@
         pairCode: pairCode,
         apiKey:   apiKey,
     });
+})(request, response);
+
+
+/* ─────────────────────────────────────────────────────────
+   RESOURCE 23: PUT /auth/charimg
+   HTTP Method: PUT  |  Path: /auth/charimg
+   Requires Authentication: FALSE
+   Body: { charImg: "data:image/jpeg;base64,..." }
+   Stores compressed base64 profile picture for the current user.
+   NOTE: u_profile_picture field must be String type, max_length 100000.
+   ───────────────────────────────────────────────────────── */
+(function process(request, response) {
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
+
+    var body    = request.body && request.body.data;
+    var imgData = body ? (body.charImg || '') : '';
+
+    _au.setValue('u_profile_picture', imgData);
+    _au.update();
+
+    response.setBody({ success: true });
 })(request, response);

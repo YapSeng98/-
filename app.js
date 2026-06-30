@@ -37,6 +37,25 @@ const App = (() => {
 
   /* ── Helpers ── */
   const now = () => new Date();
+
+  // Compress an image File to a small base64 JPEG for SN storage
+  function compressImage(file, maxDim = 150, quality = 0.6) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+        const canvas = document.createElement('canvas');
+        canvas.width  = Math.round(img.width  * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(''); };
+      img.src = url;
+    });
+  }
   const monthKey = (d = now()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
   const monthLabel = (k) => { const [y,m] = k.split('-'); return `${y} 年 ${parseInt(m)} 月`; };
 
@@ -162,6 +181,9 @@ const App = (() => {
         }
         if (cfg.char1Name) { S.charName1 = cfg.char1Name; localStorage.setItem('sn_charname1', cfg.char1Name); }
         if (cfg.char2Name) { S.charName2 = cfg.char2Name; localStorage.setItem('sn_charname2', cfg.char2Name); }
+        // Profile pictures come from SN auth records; blank if not set
+        S.charImg1 = cfg.charImg1 || '';
+        S.charImg2 = cfg.charImg2 || '';
         const decodeIcons = (arr) => arr.map(x => ({ ...x, icon: decodeFromSN(x.icon) }));
         S.categories  = decodeIcons(await snFetch('/categories'));
         S.rewards     = decodeIcons(await snFetch('/rewards'));
@@ -1055,29 +1077,42 @@ const App = (() => {
     openModal('modal-history');
   }
 
-  function setCharImg(n, input) {
+  async function setCharImg(n, input) {
     const file = input.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      if (n === 1) S.charImg1 = e.target.result;
-      else         S.charImg2 = e.target.result;
-      await Data.saveConfig({ charImg1: S.charImg1, charImg2: S.charImg2 });
-      renderCharacters();
-      _refreshSettingsPreview();
-      showToast(`📷 图片已更新！`);
-    };
-    reader.readAsDataURL(file);
     input.value = '';
+    showToast('正在处理图片…');
+    const data = await compressImage(file, 150, 0.6);
+    if (!data) { showToast('图片读取失败'); return; }
+    if (n === 1) S.charImg1 = data;
+    else         S.charImg2 = data;
+    if (S.usingSN) {
+      try {
+        await snFetch('/auth/charimg', { method: 'PUT', body: JSON.stringify({ charImg: data }) });
+        showToast('📷 图片已同步到 SN！');
+      } catch (err) {
+        showToast('图片同步失败: ' + err.message.slice(0, 60));
+      }
+    } else {
+      await Data.saveConfig({ charImg1: S.charImg1, charImg2: S.charImg2 });
+      showToast('📷 图片已更新！');
+    }
+    renderCharacters();
+    _refreshSettingsPreview();
   }
 
   async function resetCharImg(n) {
     if (n === 1) S.charImg1 = '';
     else         S.charImg2 = '';
-    await Data.saveConfig({ charImg1: S.charImg1, charImg2: S.charImg2 });
+    if (S.usingSN) {
+      try { await snFetch('/auth/charimg', { method: 'PUT', body: JSON.stringify({ charImg: '' }) }); }
+      catch { /* best effort */ }
+    } else {
+      await Data.saveConfig({ charImg1: S.charImg1, charImg2: S.charImg2 });
+    }
     renderCharacters();
     _refreshSettingsPreview();
-    showToast(`已重置为默认图片`);
+    showToast('已重置为默认图片');
   }
 
   function _refreshSettingsPreview() {
