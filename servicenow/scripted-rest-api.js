@@ -58,9 +58,10 @@
             mode:             gr.getValue('u_mode') || 'reward',
             rewardTarget:     parseInt(gr.getValue('u_reward_target'))   || 100,
             punishThreshold:  parseInt(gr.getValue('u_punish_threshold')) || -80,
+            matchId:          gr.getValue('u_match') || '',
         }});
     } else {
-        response.setBody({ result: { mode: 'reward', rewardTarget: 100, punishThreshold: -80 } });
+        response.setBody({ result: { mode: 'reward', rewardTarget: 100, punishThreshold: -80, matchId: '' } });
     }
 })(request, response);
 
@@ -543,7 +544,7 @@
     gr.query();
 
     if (gr.next()) {
-        // User found — update last_login and return stored charId
+        // User found — update last_login, return charId + matchId from u_love_auth.u_match
         gr.setValue('u_last_login', new GlideDateTime());
         gr.update();
         response.setStatus(200);
@@ -551,10 +552,11 @@
             success:  true,
             action:   'login',
             username: gr.getValue('u_username'),
-            charId:   gr.getValue('u_char_id')
+            charId:   gr.getValue('u_char_id'),
+            matchId:  gr.getValue('u_match') || ''
         }});
     } else {
-        // New user — auto-register
+        // New user — auto-register (admin links u_match in SN after registration)
         var newGr = new GlideRecord('u_love_auth');
         newGr.initialize();
         newGr.setValue('u_username',   username);
@@ -566,7 +568,8 @@
             success:  true,
             action:   'registered',
             username: username,
-            charId:   charId
+            charId:   charId,
+            matchId:  ''
         }});
     }
 })(request, response);
