@@ -59,7 +59,7 @@
    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
    _au.addQuery('u_api_key', _tok);
    _au.query();
-   if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+   if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
    var matchId = _au.getValue('u_match') || '';
    ═══════════════════════════════════════════════════════════ */
 
@@ -74,20 +74,21 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
     var matchId = _au.getValue('u_match') || '';
 
-    var gr = new GlideRecord('u_love_config');
+    var gr = new GlideRecord('x_887486_love_app_u_love_config');
     if (matchId) gr.addQuery('u_match', matchId);
     gr.query();
     if (gr.next()) {
-        response.setBody({ result: {
+        response.setBody({
+            configured:      true,
             mode:            gr.getValue('u_mode') || 'reward',
-            rewardTarget:    parseInt(gr.getValue('u_reward_target'))   || 100,
+            rewardTarget:    parseInt(gr.getValue('u_reward_target'))    || 100,
             punishThreshold: parseInt(gr.getValue('u_punish_threshold')) || -80,
-        }});
+        });
     } else {
-        response.setBody({ result: { mode: 'reward', rewardTarget: 100, punishThreshold: -80 } });
+        response.setBody({ configured: false });
     }
 })(request, response);
 
@@ -103,20 +104,21 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
     var matchId = _au.getValue('u_match') || '';
 
     var body = request.body.data;
-    var gr = new GlideRecord('u_love_config');
+    var gr = new GlideRecord('x_887486_love_app_u_love_config');
     if (matchId) gr.addQuery('u_match', matchId);
     gr.query();
-    if (!gr.next()) { gr.initialize(); if (matchId) gr.setValue('u_match', matchId); }
+    var isNew = !gr.next();
+    if (isNew) { gr.initialize(); if (matchId) gr.setValue('u_match', matchId); }
 
     if (body.mode            !== undefined) gr.setValue('u_mode',             body.mode);
     if (body.rewardTarget    !== undefined) gr.setValue('u_reward_target',    body.rewardTarget);
     if (body.punishThreshold !== undefined) gr.setValue('u_punish_threshold', body.punishThreshold);
-    gr.save();
-    response.setBody({ result: { success: true } });
+    if (isNew) { gr.insert(); } else { gr.update(); }
+    response.setBody({ success: true });
 })(request, response);
 
 
@@ -130,10 +132,10 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
     var matchId = _au.getValue('u_match') || '';
 
-    var gr = new GlideRecord('u_love_category');
+    var gr = new GlideRecord('x_887486_love_app_u_love_category');
     if (matchId) gr.addQuery('u_match', matchId);
     gr.orderBy('u_name');
     gr.query();
@@ -147,7 +149,7 @@
             active: gr.getValue('u_active') === '1' || gr.getValue('u_active') === true,
         });
     }
-    response.setBody({ result: cats });
+    response.setBody(cats);
 })(request, response);
 
 
@@ -163,7 +165,7 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
     var matchId = _au.getValue('u_match') || '';
 
     var month = request.queryParams.month;
@@ -172,7 +174,7 @@
         month = d.getLocalDate().substring(0, 7);
     }
 
-    var gr = new GlideRecord('u_love_entry');
+    var gr = new GlideRecord('x_887486_love_app_u_love_entry');
     gr.addQuery('u_month', month);
     if (matchId) gr.addQuery('u_match', matchId);
     gr.addNullQuery('u_monthly');
@@ -193,7 +195,7 @@
             date:    gr.getValue('u_date'),
         });
     }
-    response.setBody({ result: entries });
+    response.setBody(entries);
 })(request, response);
 
 
@@ -208,17 +210,17 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
     var matchId = _au.getValue('u_match') || '';
 
     var body = request.body.data;
-    var gr = new GlideRecord('u_love_entry');
+    var gr = new GlideRecord('x_887486_love_app_u_love_entry');
     gr.initialize();
     gr.setValue('u_char',          body.charId   || 'char1');
     gr.setValue('u_category',      body.catId    || '');
     gr.setValue('u_category_name', body.catName  || '');
     gr.setValue('u_category_pts',  parseInt(body.pts) || 0);
-    gr.setValue('u_icon',          body.icon     || '📌');
+    gr.setValue('u_icon',          body.icon     || '');
     gr.setValue('u_points',        parseInt(body.pts) || 0);
     gr.setValue('u_note',          body.desc     || '');
     gr.setValue('u_month',         body.month    || '');
@@ -226,7 +228,7 @@
     if (matchId) gr.setValue('u_match', matchId);
     var sysId = gr.insert();
 
-    response.setBody({ result: { id: sysId, success: true } });
+    response.setBody({ id: sysId, success: true });
     response.setStatus(201);
 })(request, response);
 
@@ -241,14 +243,14 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
 
     var id   = request.pathParams.id;
     var body = request.body.data;
-    var gr   = new GlideRecord('u_love_entry');
+    var gr   = new GlideRecord('x_887486_love_app_u_love_entry');
     if (!gr.get(id)) {
         response.setStatus(404);
-        response.setBody({ result: { error: 'Not found' } });
+        response.setBody({ error: 'Not found' });
         return;
     }
     if (body.catId   !== undefined) gr.setValue('u_category',      body.catId);
@@ -259,7 +261,7 @@
     if (body.date    !== undefined) gr.setValue('u_date',          body.date);
     if (body.charId  !== undefined) gr.setValue('u_char',          body.charId);
     gr.update();
-    response.setBody({ result: { success: true } });
+    response.setBody({ success: true });
 })(request, response);
 
 
@@ -273,16 +275,16 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
 
     var id = request.pathParams.id;
-    var gr = new GlideRecord('u_love_entry');
+    var gr = new GlideRecord('x_887486_love_app_u_love_entry');
     if (gr.get(id)) {
         gr.deleteRecord();
-        response.setBody({ result: { success: true } });
+        response.setBody({ success: true });
     } else {
         response.setStatus(404);
-        response.setBody({ result: { error: 'Not found' } });
+        response.setBody({ error: 'Not found' });
     }
 })(request, response);
 
@@ -297,10 +299,10 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
     var matchId = _au.getValue('u_match') || '';
 
-    var gr = new GlideRecord('u_love_reward');
+    var gr = new GlideRecord('x_887486_love_app_u_love_reward');
     if (matchId) gr.addQuery('u_match', matchId);
     gr.orderBy('u_points');
     gr.query();
@@ -314,7 +316,7 @@
             desc:   gr.getValue('u_desc'),
         });
     }
-    response.setBody({ result: list });
+    response.setBody(list);
 })(request, response);
 
 
@@ -328,10 +330,10 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
     var matchId = _au.getValue('u_match') || '';
 
-    var gr = new GlideRecord('u_love_punishment');
+    var gr = new GlideRecord('x_887486_love_app_u_love_punishment');
     if (matchId) gr.addQuery('u_match', matchId);
     gr.orderBy('u_points');
     gr.query();
@@ -345,7 +347,7 @@
             desc:   gr.getValue('u_desc'),
         });
     }
-    response.setBody({ result: list });
+    response.setBody(list);
 })(request, response);
 
 
@@ -359,10 +361,10 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
     var matchId = _au.getValue('u_match') || '';
 
-    var gr = new GlideRecord('u_love_monthly');
+    var gr = new GlideRecord('x_887486_love_app_u_love_monthly');
     if (matchId) gr.addQuery('u_match', matchId);
     gr.orderByDesc('u_month');
     gr.setLimit(24);
@@ -379,7 +381,7 @@
             settledAt: gr.getValue('u_settled_at'),
         });
     }
-    response.setBody({ result: list });
+    response.setBody(list);
 })(request, response);
 
 
@@ -394,12 +396,12 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
     var matchId = _au.getValue('u_match') || '';
 
     var body = request.body.data;
 
-    var gr = new GlideRecord('u_love_monthly');
+    var gr = new GlideRecord('x_887486_love_app_u_love_monthly');
     gr.initialize();
     gr.setValue('u_month',      body.month              || '');
     gr.setValue('u_char1_pts',  parseInt(body.char1Pts) || 0);
@@ -411,7 +413,7 @@
     if (matchId) gr.setValue('u_match', matchId);
     var monthSysId = gr.insert();
 
-    var entryGr = new GlideRecord('u_love_entry');
+    var entryGr = new GlideRecord('x_887486_love_app_u_love_entry');
     entryGr.addQuery('u_month', body.month);
     if (matchId) entryGr.addQuery('u_match', matchId);
     entryGr.addNullQuery('u_monthly');
@@ -421,7 +423,7 @@
         entryGr.update();
     }
 
-    response.setBody({ result: { success: true, monthId: monthSysId } });
+    response.setBody({ success: true, monthId: monthSysId });
 })(request, response);
 
 
@@ -436,19 +438,19 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
     var matchId = _au.getValue('u_match') || '';
 
     var body = request.body.data;
-    var gr = new GlideRecord('u_love_category');
+    var gr = new GlideRecord('x_887486_love_app_u_love_category');
     gr.initialize();
-    gr.setValue('u_emoji',  body.icon   || '📌');
+    gr.setValue('u_emoji',  body.icon   || '');
     gr.setValue('u_name',   body.name   || '');
     gr.setValue('u_points', parseInt(body.pts) || 0);
     gr.setValue('u_active', body.active !== false);
     if (matchId) gr.setValue('u_match', matchId);
     var sysId = gr.insert();
-    response.setBody({ result: { id: sysId, success: true } });
+    response.setBody({ id: sysId, success: true });
     response.setStatus(201);
 })(request, response);
 
@@ -463,14 +465,14 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
 
     var id   = request.pathParams.id;
     var body = request.body.data;
-    var gr   = new GlideRecord('u_love_category');
+    var gr   = new GlideRecord('x_887486_love_app_u_love_category');
     if (!gr.get(id)) {
         response.setStatus(404);
-        response.setBody({ result: { error: 'Not found' } });
+        response.setBody({ error: 'Not found' });
         return;
     }
     if (body.icon   !== undefined) gr.setValue('u_emoji',  body.icon);
@@ -478,7 +480,7 @@
     if (body.pts    !== undefined) gr.setValue('u_points', parseInt(body.pts));
     if (body.active !== undefined) gr.setValue('u_active', body.active);
     gr.update();
-    response.setBody({ result: { success: true } });
+    response.setBody({ success: true });
 })(request, response);
 
 
@@ -492,16 +494,16 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
 
     var id = request.pathParams.id;
-    var gr = new GlideRecord('u_love_category');
+    var gr = new GlideRecord('x_887486_love_app_u_love_category');
     if (gr.get(id)) {
         gr.deleteRecord();
-        response.setBody({ result: { success: true } });
+        response.setBody({ success: true });
     } else {
         response.setStatus(404);
-        response.setBody({ result: { error: 'Not found' } });
+        response.setBody({ error: 'Not found' });
     }
 })(request, response);
 
@@ -517,19 +519,19 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
     var matchId = _au.getValue('u_match') || '';
 
     var body = request.body.data;
-    var gr = new GlideRecord('u_love_reward');
+    var gr = new GlideRecord('x_887486_love_app_u_love_reward');
     gr.initialize();
-    gr.setValue('u_emoji',  body.icon    || '🎁');
+    gr.setValue('u_emoji',  body.icon    || '');
     gr.setValue('u_name',   body.name    || '');
     gr.setValue('u_points', parseInt(body.minPts) || 0);
     gr.setValue('u_desc',   body.desc    || '');
     if (matchId) gr.setValue('u_match', matchId);
     var sysId = gr.insert();
-    response.setBody({ result: { id: sysId, success: true } });
+    response.setBody({ id: sysId, success: true });
     response.setStatus(201);
 })(request, response);
 
@@ -544,14 +546,14 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
 
     var id   = request.pathParams.id;
     var body = request.body.data;
-    var gr   = new GlideRecord('u_love_reward');
+    var gr   = new GlideRecord('x_887486_love_app_u_love_reward');
     if (!gr.get(id)) {
         response.setStatus(404);
-        response.setBody({ result: { error: 'Not found' } });
+        response.setBody({ error: 'Not found' });
         return;
     }
     if (body.icon   !== undefined) gr.setValue('u_emoji',  body.icon);
@@ -559,7 +561,7 @@
     if (body.minPts !== undefined) gr.setValue('u_points', parseInt(body.minPts));
     if (body.desc   !== undefined) gr.setValue('u_desc',   body.desc);
     gr.update();
-    response.setBody({ result: { success: true } });
+    response.setBody({ success: true });
 })(request, response);
 
 
@@ -573,16 +575,16 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
 
     var id = request.pathParams.id;
-    var gr = new GlideRecord('u_love_reward');
+    var gr = new GlideRecord('x_887486_love_app_u_love_reward');
     if (gr.get(id)) {
         gr.deleteRecord();
-        response.setBody({ result: { success: true } });
+        response.setBody({ success: true });
     } else {
         response.setStatus(404);
-        response.setBody({ result: { error: 'Not found' } });
+        response.setBody({ error: 'Not found' });
     }
 })(request, response);
 
@@ -598,19 +600,19 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
     var matchId = _au.getValue('u_match') || '';
 
     var body = request.body.data;
-    var gr = new GlideRecord('u_love_punishment');
+    var gr = new GlideRecord('x_887486_love_app_u_love_punishment');
     gr.initialize();
-    gr.setValue('u_emoji',  body.icon    || '😈');
+    gr.setValue('u_emoji',  body.icon    || '');
     gr.setValue('u_name',   body.name    || '');
     gr.setValue('u_points', parseInt(body.minPts) || 0);
     gr.setValue('u_desc',   body.desc    || '');
     if (matchId) gr.setValue('u_match', matchId);
     var sysId = gr.insert();
-    response.setBody({ result: { id: sysId, success: true } });
+    response.setBody({ id: sysId, success: true });
     response.setStatus(201);
 })(request, response);
 
@@ -625,14 +627,14 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
 
     var id   = request.pathParams.id;
     var body = request.body.data;
-    var gr   = new GlideRecord('u_love_punishment');
+    var gr   = new GlideRecord('x_887486_love_app_u_love_punishment');
     if (!gr.get(id)) {
         response.setStatus(404);
-        response.setBody({ result: { error: 'Not found' } });
+        response.setBody({ error: 'Not found' });
         return;
     }
     if (body.icon   !== undefined) gr.setValue('u_emoji',  body.icon);
@@ -640,7 +642,7 @@
     if (body.minPts !== undefined) gr.setValue('u_points', parseInt(body.minPts));
     if (body.desc   !== undefined) gr.setValue('u_desc',   body.desc);
     gr.update();
-    response.setBody({ result: { success: true } });
+    response.setBody({ success: true });
 })(request, response);
 
 
@@ -654,16 +656,16 @@
     var _au = new GlideRecord('x_887486_love_app_u_love_auth');
     _au.addQuery('u_api_key', _tok);
     _au.query();
-    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
 
     var id = request.pathParams.id;
-    var gr = new GlideRecord('u_love_punishment');
+    var gr = new GlideRecord('x_887486_love_app_u_love_punishment');
     if (gr.get(id)) {
         gr.deleteRecord();
-        response.setBody({ result: { success: true } });
+        response.setBody({ success: true });
     } else {
         response.setStatus(404);
-        response.setBody({ result: { error: 'Not found' } });
+        response.setBody({ error: 'Not found' });
     }
 })(request, response);
 
@@ -689,50 +691,45 @@
 
     if (!username || !password) {
         response.setStatus(400);
-        response.setBody({ result: { error: '账号和密码不能为空' } });
+        response.setBody({ error: '账号和密码不能为空' });
         return;
     }
 
-    // Check if username already taken
     var existing = new GlideRecord('x_887486_love_app_u_love_auth');
     existing.addQuery('u_username', username);
     existing.query();
     if (existing.next()) {
         response.setStatus(409);
-        response.setBody({ result: { error: '账号已存在，请直接登录' } });
+        response.setBody({ error: '账号已存在，请直接登录' });
         return;
     }
 
-    // Generate a random api_key (UUID-style)
     var apiKey = gs.generateGUID();
     var matchId = '';
     var returnPairCode = '';
-    var matchGr = new GlideRecord('u_love_match');
+    var matchGr = new GlideRecord('x_887486_love_app_u_love_match');
 
     if (charId === 'char1') {
-        // Create a new match row with a 6-digit pair code
         returnPairCode = String(Math.floor(100000 + Math.random() * 900000));
         matchGr.initialize();
         matchGr.setValue('u_pair_code', returnPairCode);
         matchId = matchGr.insert();
     } else {
-        // char2: find the match by pair code
         if (!pairCode) {
             response.setStatus(400);
-            response.setBody({ result: { error: '请输入伴侣的配对码' } });
+            response.setBody({ error: '请输入伴侣的配对码' });
             return;
         }
         matchGr.addQuery('u_pair_code', pairCode);
         matchGr.query();
         if (!matchGr.next()) {
             response.setStatus(404);
-            response.setBody({ result: { error: '配对码无效，请重新确认' } });
+            response.setBody({ error: '配对码无效，请重新确认' });
             return;
         }
         matchId = matchGr.getUniqueValue();
     }
 
-    // Create u_love_auth record
     var authGr = new GlideRecord('x_887486_love_app_u_love_auth');
     authGr.initialize();
     authGr.setValue('u_username',   username);
@@ -743,30 +740,15 @@
     if (matchId) authGr.setValue('u_match', matchId);
     authGr.insert();
 
-    // Also create a default config row for this match (if not already)
-    if (matchId && charId === 'char1') {
-        var cfgGr = new GlideRecord('u_love_config');
-        cfgGr.addQuery('u_match', matchId);
-        cfgGr.query();
-        if (!cfgGr.next()) {
-            cfgGr.initialize();
-            cfgGr.setValue('u_mode',             'reward');
-            cfgGr.setValue('u_reward_target',    100);
-            cfgGr.setValue('u_punish_threshold', -80);
-            cfgGr.setValue('u_match',            matchId);
-            cfgGr.insert();
-        }
-    }
-
-    response.setStatus(201);
-    response.setBody({ result: {
+    response.setBody({
         success:   true,
         username:  username,
         charId:    charId,
         matchId:   matchId,
         pairCode:  returnPairCode,
         apiKey:    apiKey,
-    }});
+    });
+    response.setStatus(201);
 })(request, response);
 
 
@@ -789,7 +771,7 @@
 
     if (!username || !password) {
         response.setStatus(400);
-        response.setBody({ result: { error: '账号和密码不能为空' } });
+        response.setBody({ error: '账号和密码不能为空' });
         return;
     }
 
@@ -799,17 +781,16 @@
 
     if (!gr.next()) {
         response.setStatus(404);
-        response.setBody({ result: { error: '账号不存在，请先注册' } });
+        response.setBody({ error: '账号不存在，请先注册' });
         return;
     }
 
     if (gr.getValue('u_password') !== password) {
         response.setStatus(401);
-        response.setBody({ result: { error: '密码错误' } });
+        response.setBody({ error: '密码错误' });
         return;
     }
 
-    // Refresh api_key on each login (optional but good practice)
     var apiKey = gr.getValue('u_api_key') || gs.generateGUID();
     gr.setValue('u_api_key',    apiKey);
     gr.setValue('u_last_login', new GlideDateTime());
@@ -817,22 +798,21 @@
 
     var matchId = gr.getValue('u_match') || '';
 
-    // Fetch pair_code from u_love_match so char1 can reshare it if needed
     var pairCode = '';
     if (matchId) {
-        var mGr = new GlideRecord('u_love_match');
+        var mGr = new GlideRecord('x_887486_love_app_u_love_match');
         if (mGr.get(matchId)) {
             pairCode = mGr.getValue('u_pair_code') || '';
         }
     }
 
     response.setStatus(200);
-    response.setBody({ result: {
+    response.setBody({
         success:  true,
         username: gr.getValue('u_username'),
         charId:   gr.getValue('u_char_id') || 'char1',
         matchId:  matchId,
         pairCode: pairCode,
         apiKey:   apiKey,
-    }});
+    });
 })(request, response);

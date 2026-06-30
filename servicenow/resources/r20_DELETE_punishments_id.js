@@ -1,0 +1,18 @@
+// RESOURCE 20: DELETE /punishments/{id}  |  Method: DELETE  |  Path: /punishments/{id}  |  Requires Authentication: FALSE
+(function process(request, response) {
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('x_887486_love_app_u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
+
+    var id = request.pathParams.id;
+    var gr = new GlideRecord('x_887486_love_app_u_love_punishment');
+    if (gr.get(id)) {
+        gr.deleteRecord();
+        response.setBody({ success: true });
+    } else {
+        response.setStatus(404);
+        response.setBody({ error: 'Not found' });
+    }
+})(request, response);

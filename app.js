@@ -32,6 +32,7 @@ const App = (() => {
     usingSN: false,
     matchId: '',
     historyRecords: [],
+    needsSetup: false,
   };
 
   /* ── Helpers ── */
@@ -117,9 +118,17 @@ const App = (() => {
     async init() {
       if (S.usingSN) {
         const cfg = await snFetch('/config');
-        S.mode            = cfg.mode          || 'reward';
-        S.rewardTarget    = cfg.rewardTarget  || 100;
-        S.punishThreshold = cfg.punishThreshold || -80;
+        if (cfg && cfg.configured === false) {
+          S.mode            = 'reward';
+          S.rewardTarget    = 100;
+          S.punishThreshold = -80;
+          S.needsSetup      = true;
+        } else {
+          S.mode            = cfg.mode            || 'reward';
+          S.rewardTarget    = cfg.rewardTarget    || 100;
+          S.punishThreshold = cfg.punishThreshold || -80;
+          S.needsSetup      = false;
+        }
         S.categories      = await snFetch('/categories');
         S.rewards         = await snFetch('/rewards');
         S.punishments     = await snFetch('/punishments');
@@ -583,7 +592,12 @@ const App = (() => {
       await Data.init();
       await refresh();
       document.getElementById('setup-overlay').classList.add('hidden');
-      showToast('✅ 欢迎回来，' + username + '！');
+      if (S.needsSetup) {
+        showSettings();
+        showToast('欢迎！请先设置游戏规则 ⚙️');
+      } else {
+        showToast('✅ 欢迎回来，' + username + '！');
+      }
     } catch (err) {
       S.usingSN = false;
       S.apiKey  = '';
@@ -638,7 +652,12 @@ const App = (() => {
         await Data.init();
         await refresh();
         document.getElementById('setup-overlay').classList.add('hidden');
-        showToast('🎉 配对成功！欢迎，' + username + '！');
+        if (S.needsSetup) {
+          showSettings();
+          showToast('欢迎！请先设置游戏规则 ⚙️');
+        } else {
+          showToast('🎉 配对成功！欢迎，' + username + '！');
+        }
       }
     } catch (err) {
       const msg = err.message.includes('409') ? '账号已存在，请直接登录'

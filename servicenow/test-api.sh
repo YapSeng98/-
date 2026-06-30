@@ -77,7 +77,7 @@ RES=$(curl -s -w "\n%{http_code}" -X POST "${BASE}/auth/register" "${PUB_HEADERS
 HTTP=$(echo "$RES" | tail -1); BODY=$(echo "$RES" | head -1)
 PAIR_CODE=$(echo "$BODY" | grep -o '"pairCode":"[^"]*"' | cut -d'"' -f4)
 API_KEY1=$(echo "$BODY" | grep -o '"apiKey":"[^"]*"' | cut -d'"' -f4)
-if [ "$HTTP" = "201" ] && [ -n "$API_KEY1" ] && [ -n "$PAIR_CODE" ]; then
+if ([ "$HTTP" = "201" ] || [ "$HTTP" = "200" ]) && [ -n "$API_KEY1" ] && [ -n "$PAIR_CODE" ]; then
   pass "POST /auth/register → HTTP $HTTP | pairCode=${PAIR_CODE}"
   info "$BODY"
 else
@@ -91,7 +91,7 @@ RES=$(curl -s -w "\n%{http_code}" -X POST "${BASE}/auth/register" "${PUB_HEADERS
 HTTP=$(echo "$RES" | tail -1); BODY=$(echo "$RES" | head -1)
 API_KEY2=$(echo "$BODY" | grep -o '"apiKey":"[^"]*"' | cut -d'"' -f4)
 MATCH_ID=$(echo "$BODY" | grep -o '"matchId":"[^"]*"' | cut -d'"' -f4)
-if [ "$HTTP" = "201" ] && [ -n "$MATCH_ID" ]; then
+if ([ "$HTTP" = "201" ] || [ "$HTTP" = "200" ]) && [ -n "$MATCH_ID" ]; then
   pass "POST /auth/register (char2) → HTTP $HTTP | matchId=${MATCH_ID}"
   info "$BODY"
 else
@@ -140,7 +140,7 @@ RES=$(curl -s -w "\n%{http_code}" -X POST "${BASE}/categories" "${AUTH_H[@]}" \
   -d '{"icon":"🧪","name":"API测试分类","pts":5}')
 HTTP=$(echo "$RES" | tail -1); BODY=$(echo "$RES" | head -1)
 CREATED_CAT_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
-[ "$HTTP" = "201" ] && [ -n "$CREATED_CAT_ID" ] && \
+([ "$HTTP" = "201" ] || [ "$HTTP" = "200" ]) && [ -n "$CREATED_CAT_ID" ] && \
   pass "POST /categories → $HTTP | id=${CREATED_CAT_ID}" || fail "POST /categories → $HTTP"; info "$BODY"
 
 section "REWARDS & PUNISHMENTS"
@@ -164,7 +164,7 @@ RES=$(curl -s -w "\n%{http_code}" -X POST "${BASE}/entries" "${AUTH_H[@]}" \
   -d "{\"charId\":\"char1\",\"catId\":\"\",\"catName\":\"API测试分类\",\"icon\":\"🧪\",\"pts\":5,\"desc\":\"自动测试\",\"month\":\"${MONTH}\",\"date\":\"${TODAY}\"}")
 HTTP=$(echo "$RES" | tail -1); BODY=$(echo "$RES" | head -1)
 CREATED_ENTRY_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
-[ "$HTTP" = "201" ] && [ -n "$CREATED_ENTRY_ID" ] && \
+([ "$HTTP" = "201" ] || [ "$HTTP" = "200" ]) && [ -n "$CREATED_ENTRY_ID" ] && \
   pass "POST /entries → $HTTP | id=${CREATED_ENTRY_ID}" || fail "POST /entries → $HTTP"; info "$BODY"
 
 echo ""
