@@ -60,7 +60,7 @@
    _au.addQuery('u_api_key', _tok);
    _au.query();
    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
-   var matchId = _au.getValue('u_name') || '';
+   var matchId = _au.getValue('u_match') || '';
    ═══════════════════════════════════════════════════════════ */
 
 
