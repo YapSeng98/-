@@ -40,6 +40,15 @@ const App = (() => {
   const monthKey = (d = now()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
   const monthLabel = (k) => { const [y,m] = k.split('-'); return `${y} 年 ${parseInt(m)} 月`; };
 
+  function _snUnwrap(json) {
+    let data = json.result !== undefined ? json.result : json;
+    // Unwrap a second level if old SN scripts double-wrapped with { result: ... }
+    if (data !== null && typeof data === 'object' && !Array.isArray(data) && data.result !== undefined) {
+      data = data.result;
+    }
+    return data;
+  }
+
   async function snFetch(path, opts = {}) {
     const url = `https://${S.snInstance}${SN_API_PATH}${path}`;
     const res = await fetch(url, {
@@ -47,8 +56,7 @@ const App = (() => {
       ...opts,
     });
     if (!res.ok) throw new Error(`SN ${res.status}: ${await res.text()}`);
-    const json = await res.json();
-    return json.result !== undefined ? json.result : json;
+    return _snUnwrap(await res.json());
   }
 
   async function snPublicFetch(path, opts = {}) {
@@ -58,8 +66,7 @@ const App = (() => {
       ...opts,
     });
     if (!res.ok) throw new Error(`SN ${res.status}: ${await res.text()}`);
-    const json = await res.json();
-    return json.result !== undefined ? json.result : json;
+    return _snUnwrap(await res.json());
   }
 
   /* ── LocalStorage (demo) backend ── */
@@ -603,7 +610,8 @@ const App = (() => {
       S.apiKey  = '';
       const msg = err.message.includes('401') ? '账号或密码错误'
                 : err.message.includes('404') ? '账号不存在，请先注册'
-                : '登录失败，请稍后再试';
+                : err.message.includes('Failed to fetch') ? '无法连接服务器（CORS 或网络问题）'
+                : `登录失败：${err.message.slice(0, 80)}`;
       _loginErr(msg);
       if (btn) { btn.disabled = false; btn.textContent = '登录'; }
     }
