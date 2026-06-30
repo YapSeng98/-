@@ -8,7 +8,6 @@ const App = (() => {
   /* ── Config ── */
   const SN_API_PATH = '/api/x_887486_love_app/love_score';
   const SN_INSTANCE = 'dev405150.service-now.com';
-  const SN_API_USER = 'love_score_api';  // shared service account; user just enters the password
 
   /* ── State ── */
   let S = {
@@ -29,7 +28,7 @@ const App = (() => {
     charImg1: '',
     charImg2: '',
     snInstance: '',
-    authHeader: '',
+    apiKey: '',
     usingSN: false,
     matchId: '',
     historyRecords: [],
@@ -41,13 +40,20 @@ const App = (() => {
   const monthLabel = (k) => { const [y,m] = k.split('-'); return `${y} 年 ${parseInt(m)} 月`; };
 
   async function snFetch(path, opts = {}) {
-    const method = (opts.method || 'GET').toUpperCase();
-    let url = `https://${S.snInstance}${SN_API_PATH}${path}`;
-    if (method === 'GET' && S.matchId) {
-      url += (path.includes('?') ? '&' : '?') + 'match=' + S.matchId;
-    }
+    const url = `https://${S.snInstance}${SN_API_PATH}${path}`;
     const res = await fetch(url, {
-      headers: { 'Authorization': S.authHeader, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: { 'Authorization': 'Bearer ' + S.apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      ...opts,
+    });
+    if (!res.ok) throw new Error(`SN ${res.status}: ${await res.text()}`);
+    const json = await res.json();
+    return json.result !== undefined ? json.result : json;
+  }
+
+  async function snPublicFetch(path, opts = {}) {
+    const url = `https://${S.snInstance}${SN_API_PATH}${path}`;
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       ...opts,
     });
     if (!res.ok) throw new Error(`SN ${res.status}: ${await res.text()}`);
@@ -114,7 +120,6 @@ const App = (() => {
         S.mode            = cfg.mode          || 'reward';
         S.rewardTarget    = cfg.rewardTarget  || 100;
         S.punishThreshold = cfg.punishThreshold || -80;
-        if (cfg.matchId)  S.matchId = cfg.matchId; // matchId from config row's u_match field
         S.categories      = await snFetch('/categories');
         S.rewards         = await snFetch('/rewards');
         S.punishments     = await snFetch('/punishments');
@@ -140,7 +145,7 @@ const App = (() => {
     },
 
     async addEntry(entry) {
-      if (S.usingSN) return snFetch('/entries', { method:'POST', body: JSON.stringify({ ...entry, matchId: S.matchId }) });
+      if (S.usingSN) return snFetch('/entries', { method:'POST', body: JSON.stringify(entry) });
       const d = LS.load();
       if (!d.entries[entry.month]) d.entries[entry.month] = [];
       const e = { ...entry, id: 'e'+Date.now() };
@@ -174,7 +179,7 @@ const App = (() => {
     async settleMonth(month, char1Pts, char2Pts, mode, result1, result2) {
       if (S.usingSN) return snFetch('/monthly/settle', {
         method: 'POST',
-        body: JSON.stringify({ month, char1Pts, char2Pts, mode, result1, result2, matchId: S.matchId }),
+        body: JSON.stringify({ month, char1Pts, char2Pts, mode, result1, result2 }),
       });
       const d = LS.load();
       d.history = d.history || [];
@@ -184,7 +189,7 @@ const App = (() => {
     },
 
     async saveConfig(cfg) {
-      if (S.usingSN) return snFetch('/config', { method:'PUT', body: JSON.stringify({ ...cfg, matchId: S.matchId }) });
+      if (S.usingSN) return snFetch('/config', { method:'PUT', body: JSON.stringify(cfg) });
       const d = LS.load();
       const { entries, history, categories, rewards, punishments, ...rest } = cfg;
       Object.assign(d, rest);
@@ -201,7 +206,7 @@ const App = (() => {
 
     async addItem(type, data) {
       if (S.usingSN) {
-        const r = await snFetch(this._endpoint(type), { method:'POST', body: JSON.stringify({ ...data, matchId: S.matchId }) });
+        const r = await snFetch(this._endpoint(type), { method:'POST', body: JSON.stringify(data) });
         return r;
       }
       const d = LS.load();
@@ -543,53 +548,138 @@ const App = (() => {
   async function connect() {
     const username = document.getElementById('sn-username').value.trim();
     const password = document.getElementById('sn-password').value;
-    const charId   = document.querySelector('input[name="sn-char"]:checked')?.value || 'char1';
 
-    if (!username) { _loginErr('请输入你的名字'); return; }
-    if (!password) { _loginErr('请输入密码');     return; }
-
-    // Shared service account — user enters display name + couple password
-    S.snInstance = SN_INSTANCE;
-    S.authHeader = 'Basic ' + btoa(`${SN_API_USER}:${password}`);
-    S.usingSN    = true;
+    if (!username) { _loginErr('请输入账号'); return; }
+    if (!password) { _loginErr('请输入密码'); return; }
 
     const btn = document.getElementById('sn-connect-btn');
     if (btn) { btn.disabled = true; btn.textContent = '验证中…'; }
     _loginErr('');
+    S.snInstance = SN_INSTANCE;
 
     try {
-      // POST /auth/login: SN validates Basic Auth automatically; script looks up / creates u_love_auth
-      const result = await snFetch('/auth/login', {
+      const result = await snPublicFetch('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ username, charId }),
+        body: JSON.stringify({ username, password }),
       });
 
-      S.activeChar = result.charId  || charId;
-      S.matchId    = result.matchId || '';
-      const displayName = result.username || username;
+      S.apiKey     = result.apiKey;
+      S.matchId    = result.matchId   || '';
+      S.activeChar = result.charId    || 'char1';
+      S.usingSN    = true;
 
-      localStorage.setItem('sn_auth',     S.authHeader);
-      localStorage.setItem('sn_username', displayName);
+      localStorage.setItem('sn_api_key',  S.apiKey);
+      localStorage.setItem('sn_username', username);
       localStorage.setItem('sn_char',     S.activeChar);
       localStorage.setItem('sn_match',    S.matchId);
+
+      if (!S.matchId) {
+        // Registered but partner hasn't paired yet — show pair code screen
+        _showWaitingForPair(result.pairCode || '');
+        if (btn) { btn.disabled = false; btn.textContent = '登录'; }
+        return;
+      }
 
       await Data.init();
       await refresh();
       document.getElementById('setup-overlay').classList.add('hidden');
-
-      const action = result.action === 'registered' ? '🎉 注册成功，欢迎 ' : '✅ 欢迎回来，';
-      showToast(action + displayName + '！');
+      showToast('✅ 欢迎回来，' + username + '！');
     } catch (err) {
-      S.usingSN    = false;
-      S.authHeader = '';
-      const msg = err.message.includes('401') ? '密码错误，请重试' : '连接失败: ' + err.message;
+      S.usingSN = false;
+      S.apiKey  = '';
+      const msg = err.message.includes('401') ? '账号或密码错误'
+                : err.message.includes('404') ? '账号不存在，请先注册'
+                : '连接失败: ' + err.message;
       _loginErr(msg);
-      if (btn) { btn.disabled = false; btn.textContent = '登录 / 注册'; }
+      if (btn) { btn.disabled = false; btn.textContent = '登录'; }
     }
+  }
+
+  async function register() {
+    const username = document.getElementById('reg-username').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const charId   = document.querySelector('input[name="reg-char"]:checked')?.value || 'char1';
+    const pairCode = charId === 'char2'
+      ? (document.getElementById('reg-pair-code')?.value.trim() || '')
+      : '';
+
+    if (!username) { _regErr('请输入账号名'); return; }
+    if (!password) { _regErr('请输入密码'); return; }
+    if (charId === 'char2' && !pairCode) { _regErr('请输入伴侣的配对码'); return; }
+
+    const btn = document.getElementById('reg-submit-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '注册中…'; }
+    _regErr('');
+    S.snInstance = SN_INSTANCE;
+
+    try {
+      const result = await snPublicFetch('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ username, password, charId, pairCode }),
+      });
+
+      S.apiKey     = result.apiKey;
+      S.matchId    = result.matchId   || '';
+      S.activeChar = charId;
+      S.usingSN    = true;
+
+      localStorage.setItem('sn_api_key',  S.apiKey);
+      localStorage.setItem('sn_username', username);
+      localStorage.setItem('sn_char',     S.activeChar);
+      localStorage.setItem('sn_match',    S.matchId);
+
+      if (charId === 'char1') {
+        // Show pair code for partner to use
+        document.getElementById('reg-step-1').classList.add('hidden');
+        document.getElementById('reg-step-2').classList.remove('hidden');
+        document.getElementById('display-pair-code').textContent = result.pairCode || '------';
+      } else {
+        // char2 paired → enter app
+        await Data.init();
+        await refresh();
+        document.getElementById('setup-overlay').classList.add('hidden');
+        showToast('🎉 配对成功！欢迎，' + username + '！');
+      }
+    } catch (err) {
+      const msg = err.message.includes('409') ? '账号已存在，请直接登录'
+                : err.message.includes('404') ? '配对码无效，请重新确认'
+                : '注册失败: ' + err.message;
+      _regErr(msg);
+      if (btn) { btn.disabled = false; btn.textContent = '注册'; }
+    }
+  }
+
+  function switchTab(tab) {
+    const isLogin = tab === 'login';
+    document.getElementById('panel-login').classList.toggle('hidden', !isLogin);
+    document.getElementById('panel-register').classList.toggle('hidden', isLogin);
+    const tLogin = document.getElementById('tab-login');
+    const tReg   = document.getElementById('tab-register');
+    if (tLogin) Object.assign(tLogin.style, { background: isLogin ? 'white' : 'transparent', color: isLogin ? 'var(--blue)' : 'var(--sub)', boxShadow: isLogin ? '0 2px 8px rgba(91,155,213,0.18)' : 'none' });
+    if (tReg)   Object.assign(tReg.style,   { background: isLogin ? 'transparent' : 'white', color: isLogin ? 'var(--sub)' : 'var(--blue)', boxShadow: isLogin ? 'none' : '0 2px 8px rgba(91,155,213,0.18)' });
+    _loginErr('');
+    _regErr('');
+  }
+
+  function onRegCharChange() {
+    const isChar2 = document.querySelector('input[name="reg-char"]:checked')?.value === 'char2';
+    document.getElementById('reg-pair-wrap').classList.toggle('hidden', !isChar2);
+  }
+
+  function _showWaitingForPair(pairCode) {
+    switchTab('register');
+    document.getElementById('reg-step-1').classList.add('hidden');
+    document.getElementById('reg-step-2').classList.remove('hidden');
+    document.getElementById('display-pair-code').textContent = pairCode || '------';
   }
 
   function _loginErr(msg) {
     const el = document.getElementById('sn-login-err');
+    if (el) el.textContent = msg;
+  }
+
+  function _regErr(msg) {
+    const el = document.getElementById('reg-err');
     if (el) el.textContent = msg;
   }
 
@@ -952,7 +1042,7 @@ const App = (() => {
   }
 
   function logout() {
-    localStorage.removeItem('sn_auth');
+    localStorage.removeItem('sn_api_key');
     localStorage.removeItem('sn_username');
     localStorage.removeItem('sn_char');
     localStorage.removeItem('sn_match');
@@ -1204,21 +1294,20 @@ const App = (() => {
 
   /* ── Boot ── */
   async function boot() {
-    const savedAuth = localStorage.getItem('sn_auth');
+    const savedKey = localStorage.getItem('sn_api_key');
 
-    if (savedAuth) {
+    if (savedKey) {
       S.snInstance = SN_INSTANCE;
-      S.authHeader = savedAuth;
+      S.apiKey     = savedKey;
       S.activeChar = localStorage.getItem('sn_char')  || 'char1';
       S.matchId    = localStorage.getItem('sn_match') || '';
       S.usingSN    = true;
       try {
         await Data.init();
         await refresh();
-        // Do NOT hide overlay here — startApp() always shows login page
       } catch (err) {
         S.usingSN = false;
-        localStorage.removeItem('sn_auth');
+        localStorage.removeItem('sn_api_key');
         localStorage.removeItem('sn_username');
         localStorage.removeItem('sn_char');
         localStorage.removeItem('sn_match');
@@ -1249,7 +1338,8 @@ const App = (() => {
   });
 
   return {
-    connect, demoMode, toggleMode, selectChar,
+    connect, register, switchTab, onRegCharChange, demoMode,
+    toggleMode, selectChar,
     quickEntry, openAddModal, openEditEntryModal, submitEntry, deleteEntry,
     openSettleModal, confirmSettle,
     nav, showTables, showHistory, showSettings, saveConfig, logout,
@@ -1272,12 +1362,9 @@ function startApp() {
     if (el) el.remove();
 
     const savedName = localStorage.getItem('sn_username');
-    const savedChar = localStorage.getItem('sn_char') || 'char1';
     if (savedName) {
       const nameEl = document.getElementById('sn-username');
       if (nameEl) nameEl.value = savedName;
-      const radio = document.querySelector(`input[name="sn-char"][value="${savedChar}"]`);
-      if (radio) radio.checked = true;
       const btn = document.getElementById('sn-connect-btn');
       if (btn) btn.textContent = `继续 (${savedName}) →`;
     }

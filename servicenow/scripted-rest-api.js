@@ -6,62 +6,88 @@
   Base Path: /api/x_887486_love_app/love_score
   ============================================================
 
-  SETUP STEPS in ServiceNow:
-  1. System Web Services → Scripted REST APIs → New
-  2. Name: Love Score API  |  API ID: love_score  |  Save
-  3. Open Resources tab → add each resource below as a separate record
-  4. For each: paste ONLY the (function process...) block, not the comments
+  AUTH MODEL (custom token — NO SN native accounts needed):
+  ─────────────────────────────────────────────────────────
+  • POST /auth/register  (Resource 21) — public, no SN auth
+  • POST /auth/login     (Resource 22) — public, no SN auth
+  • All other resources  (1–20)        — Bearer token auth (validated in script)
 
-  CORS:
-  System Properties → search "glide.rest.cors.allowed_origins"
-  Add: https://yapseng98.github.io
+  HOW IT WORKS:
+  1. User registers → SN creates u_love_auth row, generates api_key (UUID)
+     - char1 (他): also creates u_love_match row with pair_code
+     - char2 (她): joins existing match via pair_code
+  2. Login → validates username + password → returns api_key + matchId
+  3. All subsequent calls → Authorization: Bearer <api_key>
+     → each resource script looks up u_love_auth by api_key
+     → derives matchId from u_love_auth.u_match
 
-  CONFIRMED COLUMN MAPPING (verified against SN tables 2026-06-30):
-  u_love_category  : sys_id → id  |  u_emoji → icon  |  u_name → name  |  u_points → pts  |  u_active → active  |  u_match → match
-  u_love_entry     : sys_id → id  |  u_char → charId  |  u_icon → icon  |  u_points → pts  |  u_note → desc  |  u_month → month  |  u_date → date  |  u_category → catId  |  u_category_name → catName  |  u_match → match
-  u_love_reward    : sys_id → id  |  u_emoji → icon  |  u_name → name  |  u_points → minPts  |  u_desc → desc  |  u_match → match
-  u_love_punishment: sys_id → id  |  u_emoji → icon  |  u_name → name  |  u_points → minPts  |  u_desc → desc  |  u_match → match
-  u_love_monthly   : u_month → month  |  u_char1_pts → char1Pts  |  u_char2_pts → char2Pts  |  u_result_1 → result1  |  u_result_2 → result2  |  u_mode → mode  |  u_settled_at → settledAt  |  u_match → match
-  u_love_config    : u_mode → mode  |  u_reward_target → rewardTarget  |  u_punish_threshold → punishThreshold  |  u_match → match
-  u_love_auth      : u_username → username  |  u_char_id → charId  |  u_last_login → lastLogin  |  u_match → matchId (Reference → u_love_match)
-  u_love_match     : couple pairing table — one row per couple, sys_id = matchId
+  SN SETUP REQUIRED (one-time):
+  ─────────────────────────────
+  A. Scripted REST API resources:
+     → Resources 1–20: set "Requires Authentication" = FALSE
+     → Resources 21–22: set "Requires Authentication" = FALSE (they are already public)
 
-  MATCH ARCHITECTURE:
-  - u_love_auth.u_match is a Reference field pointing to u_love_match
-  - All data tables (category, entry, reward, punishment, config, monthly) have u_match Reference field
-  - POST /auth/login returns matchId (from auth.u_match)
-  - GET requests pass ?match=<matchId> → scripts filter by u_match
-  - POST/PUT requests include matchId in body → scripts stamp u_match
+  B. New fields to add in SN tables:
+     u_love_auth  → u_password  (String, 100)
+     u_love_auth  → u_api_key   (String, 100, mark as Unique)
+     u_love_match → u_pair_code (String, 10)
 
-  AUTH FLOW:
-  POST /auth/login  → SN validates Basic Auth (love_score_api:password) automatically.
-                      Script checks u_love_auth for the username:
-                        found  → update last_login, return { action:'login',      charId, matchId }
-                        not found → insert new user,   return { action:'registered', charId, matchId:'' }
-                        (wrong password is rejected by SN before script runs → 401)
+  C. CORS:
+     System Properties → glide.rest.cors.allowed_origins
+     Add: https://yapseng98.github.io
+
+  CONFIRMED COLUMN MAPPING:
+  u_love_category  : sys_id→id | u_emoji→icon | u_name→name | u_points→pts | u_active→active
+  u_love_entry     : sys_id→id | u_char→charId | u_icon→icon | u_points→pts | u_note→desc
+                     u_month→month | u_date→date | u_category→catId | u_category_name→catName
+  u_love_reward    : sys_id→id | u_emoji→icon | u_name→name | u_points→minPts | u_desc→desc
+  u_love_punishment: sys_id→id | u_emoji→icon | u_name→name | u_points→minPts | u_desc→desc
+  u_love_monthly   : u_month→month | u_char1_pts→char1Pts | u_char2_pts→char2Pts
+                     u_result_1→result1 | u_result_2→result2 | u_mode→mode | u_settled_at→settledAt
+  u_love_config    : u_mode→mode | u_reward_target→rewardTarget | u_punish_threshold→punishThreshold
+  u_love_auth      : u_username→username | u_password→password | u_api_key→apiKey
+                     u_char_id→charId | u_match→matchId | u_last_login→lastLogin
+  u_love_match     : sys_id=matchId | u_pair_code→pairCode
   ============================================================
 */
+
+
+/* ═══════════════════════════════════════════════════════════
+   INLINE AUTH HELPER (copy this block into resources 1–20)
+   ═══════════════════════════════════════════════════════════
+   var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+   var _au = new GlideRecord('u_love_auth');
+   _au.addQuery('u_api_key', _tok);
+   _au.query();
+   if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+   var matchId = _au.getValue('u_match') || '';
+   ═══════════════════════════════════════════════════════════ */
 
 
 /* ─────────────────────────────────────────────────────────
    RESOURCE 1: GET /config
    HTTP Method: GET  |  Path: /config
-   Query param: match (sys_id of u_love_match)
+   Requires Authentication: FALSE
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var matchId = request.queryParams.match;
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    var matchId = _au.getValue('u_match') || '';
+
     var gr = new GlideRecord('u_love_config');
     if (matchId) gr.addQuery('u_match', matchId);
     gr.query();
     if (gr.next()) {
         response.setBody({ result: {
-            mode:             gr.getValue('u_mode') || 'reward',
-            rewardTarget:     parseInt(gr.getValue('u_reward_target'))   || 100,
-            punishThreshold:  parseInt(gr.getValue('u_punish_threshold')) || -80,
-            matchId:          gr.getValue('u_match') || '',
+            mode:            gr.getValue('u_mode') || 'reward',
+            rewardTarget:    parseInt(gr.getValue('u_reward_target'))   || 100,
+            punishThreshold: parseInt(gr.getValue('u_punish_threshold')) || -80,
         }});
     } else {
-        response.setBody({ result: { mode: 'reward', rewardTarget: 100, punishThreshold: -80, matchId: '' } });
+        response.setBody({ result: { mode: 'reward', rewardTarget: 100, punishThreshold: -80 } });
     }
 })(request, response);
 
@@ -69,19 +95,26 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 2: PUT /config
    HTTP Method: PUT  |  Path: /config
-   Body: { mode, rewardTarget, punishThreshold, matchId }
+   Requires Authentication: FALSE
+   Body: { mode, rewardTarget, punishThreshold }
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var body    = request.body.data;
-    var matchId = body.matchId || '';
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    var matchId = _au.getValue('u_match') || '';
+
+    var body = request.body.data;
     var gr = new GlideRecord('u_love_config');
     if (matchId) gr.addQuery('u_match', matchId);
     gr.query();
     if (!gr.next()) { gr.initialize(); if (matchId) gr.setValue('u_match', matchId); }
 
-    if (body.mode             !== undefined) gr.setValue('u_mode',             body.mode);
-    if (body.rewardTarget     !== undefined) gr.setValue('u_reward_target',    body.rewardTarget);
-    if (body.punishThreshold  !== undefined) gr.setValue('u_punish_threshold', body.punishThreshold);
+    if (body.mode            !== undefined) gr.setValue('u_mode',             body.mode);
+    if (body.rewardTarget    !== undefined) gr.setValue('u_reward_target',    body.rewardTarget);
+    if (body.punishThreshold !== undefined) gr.setValue('u_punish_threshold', body.punishThreshold);
     gr.save();
     response.setBody({ result: { success: true } });
 })(request, response);
@@ -90,10 +123,16 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 3: GET /categories
    HTTP Method: GET  |  Path: /categories
-   Query param: match (sys_id of u_love_match)
+   Requires Authentication: FALSE
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var matchId = request.queryParams.match;
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    var matchId = _au.getValue('u_match') || '';
+
     var gr = new GlideRecord('u_love_category');
     if (matchId) gr.addQuery('u_match', matchId);
     gr.orderBy('u_name');
@@ -115,12 +154,19 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 4: GET /entries
    HTTP Method: GET  |  Path: /entries
-   Query params: month (YYYY-MM, defaults to current), match (matchId)
+   Requires Authentication: FALSE
+   Query param: month (YYYY-MM, defaults to current month)
    Returns only unsettled entries (u_monthly IS EMPTY)
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var month   = request.queryParams.month;
-    var matchId = request.queryParams.match;
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    var matchId = _au.getValue('u_match') || '';
+
+    var month = request.queryParams.month;
     if (!month) {
         var d = new GlideDateTime();
         month = d.getLocalDate().substring(0, 7);
@@ -154,11 +200,18 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 5: POST /entries
    HTTP Method: POST  |  Path: /entries
-   Body: { charId, catId, catName, icon, pts, desc, month, date, matchId }
+   Requires Authentication: FALSE
+   Body: { charId, catId, catName, icon, pts, desc, month, date }
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var body    = request.body.data;
-    var matchId = body.matchId || '';
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    var matchId = _au.getValue('u_match') || '';
+
+    var body = request.body.data;
     var gr = new GlideRecord('u_love_entry');
     gr.initialize();
     gr.setValue('u_char',          body.charId   || 'char1');
@@ -181,8 +234,15 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 6: PUT /entries/{id}
    HTTP Method: PUT  |  Path: /entries/{id}
+   Requires Authentication: FALSE
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+
     var id   = request.pathParams.id;
     var body = request.body.data;
     var gr   = new GlideRecord('u_love_entry');
@@ -206,8 +266,15 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 7: DELETE /entries/{id}
    HTTP Method: DELETE  |  Path: /entries/{id}
+   Requires Authentication: FALSE
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+
     var id = request.pathParams.id;
     var gr = new GlideRecord('u_love_entry');
     if (gr.get(id)) {
@@ -223,10 +290,16 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 8: GET /rewards
    HTTP Method: GET  |  Path: /rewards
-   Query param: match (matchId)
+   Requires Authentication: FALSE
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var matchId = request.queryParams.match;
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    var matchId = _au.getValue('u_match') || '';
+
     var gr = new GlideRecord('u_love_reward');
     if (matchId) gr.addQuery('u_match', matchId);
     gr.orderBy('u_points');
@@ -248,10 +321,16 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 9: GET /punishments
    HTTP Method: GET  |  Path: /punishments
-   Query param: match (matchId)
+   Requires Authentication: FALSE
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var matchId = request.queryParams.match;
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    var matchId = _au.getValue('u_match') || '';
+
     var gr = new GlideRecord('u_love_punishment');
     if (matchId) gr.addQuery('u_match', matchId);
     gr.orderBy('u_points');
@@ -273,10 +352,16 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 10: GET /history
    HTTP Method: GET  |  Path: /history
-   Query param: match (matchId)
+   Requires Authentication: FALSE
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var matchId = request.queryParams.match;
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    var matchId = _au.getValue('u_match') || '';
+
     var gr = new GlideRecord('u_love_monthly');
     if (matchId) gr.addQuery('u_match', matchId);
     gr.orderByDesc('u_month');
@@ -301,14 +386,19 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 11: POST /monthly/settle
    HTTP Method: POST  |  Path: /monthly/settle
-   Body: { month, char1Pts, char2Pts, mode, result1, result2, matchId }
-   Writes monthly summary + stamps all entries for that month
+   Requires Authentication: FALSE
+   Body: { month, char1Pts, char2Pts, mode, result1, result2 }
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var body    = request.body.data;
-    var matchId = body.matchId || '';
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    var matchId = _au.getValue('u_match') || '';
 
-    // 1. Write the monthly summary record
+    var body = request.body.data;
+
     var gr = new GlideRecord('u_love_monthly');
     gr.initialize();
     gr.setValue('u_month',      body.month              || '');
@@ -321,7 +411,6 @@
     if (matchId) gr.setValue('u_match', matchId);
     var monthSysId = gr.insert();
 
-    // 2. Stamp all unsettled entries for this month with the monthly record
     var entryGr = new GlideRecord('u_love_entry');
     entryGr.addQuery('u_month', body.month);
     if (matchId) entryGr.addQuery('u_match', matchId);
@@ -339,11 +428,18 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 12: POST /categories
    HTTP Method: POST  |  Path: /categories
-   Body: { icon, name, pts, active, matchId }
+   Requires Authentication: FALSE
+   Body: { icon, name, pts, active }
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var body    = request.body.data;
-    var matchId = body.matchId || '';
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    var matchId = _au.getValue('u_match') || '';
+
+    var body = request.body.data;
     var gr = new GlideRecord('u_love_category');
     gr.initialize();
     gr.setValue('u_emoji',  body.icon   || '📌');
@@ -360,8 +456,15 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 13: PUT /categories/{id}
    HTTP Method: PUT  |  Path: /categories/{id}
+   Requires Authentication: FALSE
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+
     var id   = request.pathParams.id;
     var body = request.body.data;
     var gr   = new GlideRecord('u_love_category');
@@ -382,8 +485,15 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 14: DELETE /categories/{id}
    HTTP Method: DELETE  |  Path: /categories/{id}
+   Requires Authentication: FALSE
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+
     var id = request.pathParams.id;
     var gr = new GlideRecord('u_love_category');
     if (gr.get(id)) {
@@ -399,11 +509,18 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 15: POST /rewards
    HTTP Method: POST  |  Path: /rewards
-   Body: { icon, name, minPts, desc, matchId }
+   Requires Authentication: FALSE
+   Body: { icon, name, minPts, desc }
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var body    = request.body.data;
-    var matchId = body.matchId || '';
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    var matchId = _au.getValue('u_match') || '';
+
+    var body = request.body.data;
     var gr = new GlideRecord('u_love_reward');
     gr.initialize();
     gr.setValue('u_emoji',  body.icon    || '🎁');
@@ -420,8 +537,15 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 16: PUT /rewards/{id}
    HTTP Method: PUT  |  Path: /rewards/{id}
+   Requires Authentication: FALSE
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+
     var id   = request.pathParams.id;
     var body = request.body.data;
     var gr   = new GlideRecord('u_love_reward');
@@ -442,8 +566,15 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 17: DELETE /rewards/{id}
    HTTP Method: DELETE  |  Path: /rewards/{id}
+   Requires Authentication: FALSE
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+
     var id = request.pathParams.id;
     var gr = new GlideRecord('u_love_reward');
     if (gr.get(id)) {
@@ -459,11 +590,18 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 18: POST /punishments
    HTTP Method: POST  |  Path: /punishments
-   Body: { icon, name, minPts, desc, matchId }
+   Requires Authentication: FALSE
+   Body: { icon, name, minPts, desc }
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
-    var body    = request.body.data;
-    var matchId = body.matchId || '';
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+    var matchId = _au.getValue('u_match') || '';
+
+    var body = request.body.data;
     var gr = new GlideRecord('u_love_punishment');
     gr.initialize();
     gr.setValue('u_emoji',  body.icon    || '😈');
@@ -480,8 +618,15 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 19: PUT /punishments/{id}
    HTTP Method: PUT  |  Path: /punishments/{id}
+   Requires Authentication: FALSE
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+
     var id   = request.pathParams.id;
     var body = request.body.data;
     var gr   = new GlideRecord('u_love_punishment');
@@ -502,8 +647,15 @@
 /* ─────────────────────────────────────────────────────────
    RESOURCE 20: DELETE /punishments/{id}
    HTTP Method: DELETE  |  Path: /punishments/{id}
+   Requires Authentication: FALSE
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
+    var _tok = (request.getHeader('Authorization')||'').replace('Bearer ','').trim();
+    var _au = new GlideRecord('u_love_auth');
+    _au.addQuery('u_api_key', _tok);
+    _au.query();
+    if (!_au.next()) { response.setStatus(401); response.setBody({result:{error:'Unauthorized'}}); return; }
+
     var id = request.pathParams.id;
     var gr = new GlideRecord('u_love_punishment');
     if (gr.get(id)) {
@@ -517,25 +669,127 @@
 
 
 /* ─────────────────────────────────────────────────────────
-   RESOURCE 21: POST /auth/login
-   HTTP Method: POST  |  Path: /auth/login
+   RESOURCE 21: POST /auth/register
+   HTTP Method: POST  |  Path: /auth/register
+   Requires Authentication: FALSE  ← must be unchecked in SN
    ─────────────────────────────────────────────────────────
-   SN validates Basic Auth (love_score_api:password) before
-   this script runs — wrong password → automatic 401.
-   Script handles u_love_auth lookup + u_love_match lookup.
+   Body: { username, password, charId, pairCode }
+     - charId = 'char1' (他) → creates new u_love_match + generates pair_code
+     - charId = 'char2' (她) → joins existing u_love_match via pairCode
 
-   TABLES:
-     u_love_auth  : u_username, u_char_id, u_last_login, u_match (Ref → u_love_match)
-     u_love_match : couple pairing table (sys_id = matchId)
+   Response:
+     { username, charId, matchId, pairCode, apiKey }
    ───────────────────────────────────────────────────────── */
 (function process(request, response) {
     var body     = request.body && request.body.data;
     var username = body ? (body.username || '').toString().trim() : '';
-    var charId   = body ? (body.charId   || 'char1').toString()  : 'char1';
+    var password = body ? (body.password || '').toString()        : '';
+    var charId   = body ? (body.charId   || 'char1').toString()   : 'char1';
+    var pairCode = body ? (body.pairCode || '').toString().trim() : '';
 
-    if (!username) {
+    if (!username || !password) {
         response.setStatus(400);
-        response.setBody({ result: { error: '请输入姓名' } });
+        response.setBody({ result: { error: '账号和密码不能为空' } });
+        return;
+    }
+
+    // Check if username already taken
+    var existing = new GlideRecord('u_love_auth');
+    existing.addQuery('u_username', username);
+    existing.query();
+    if (existing.next()) {
+        response.setStatus(409);
+        response.setBody({ result: { error: '账号已存在，请直接登录' } });
+        return;
+    }
+
+    // Generate a random api_key (UUID-style)
+    var apiKey = GlideStringUtil.generateGUID();
+    var matchId = '';
+    var returnPairCode = '';
+    var matchGr = new GlideRecord('u_love_match');
+
+    if (charId === 'char1') {
+        // Create a new match row with a 6-digit pair code
+        returnPairCode = String(Math.floor(100000 + Math.random() * 900000));
+        matchGr.initialize();
+        matchGr.setValue('u_pair_code', returnPairCode);
+        matchId = matchGr.insert();
+    } else {
+        // char2: find the match by pair code
+        if (!pairCode) {
+            response.setStatus(400);
+            response.setBody({ result: { error: '请输入伴侣的配对码' } });
+            return;
+        }
+        matchGr.addQuery('u_pair_code', pairCode);
+        matchGr.query();
+        if (!matchGr.next()) {
+            response.setStatus(404);
+            response.setBody({ result: { error: '配对码无效，请重新确认' } });
+            return;
+        }
+        matchId = matchGr.getUniqueValue();
+    }
+
+    // Create u_love_auth record
+    var authGr = new GlideRecord('u_love_auth');
+    authGr.initialize();
+    authGr.setValue('u_username',   username);
+    authGr.setValue('u_password',   password);
+    authGr.setValue('u_api_key',    apiKey);
+    authGr.setValue('u_char_id',    charId);
+    authGr.setValue('u_last_login', new GlideDateTime());
+    if (matchId) authGr.setValue('u_match', matchId);
+    authGr.insert();
+
+    // Also create a default config row for this match (if not already)
+    if (matchId && charId === 'char1') {
+        var cfgGr = new GlideRecord('u_love_config');
+        cfgGr.addQuery('u_match', matchId);
+        cfgGr.query();
+        if (!cfgGr.next()) {
+            cfgGr.initialize();
+            cfgGr.setValue('u_mode',             'reward');
+            cfgGr.setValue('u_reward_target',    100);
+            cfgGr.setValue('u_punish_threshold', -80);
+            cfgGr.setValue('u_match',            matchId);
+            cfgGr.insert();
+        }
+    }
+
+    response.setStatus(201);
+    response.setBody({ result: {
+        success:   true,
+        username:  username,
+        charId:    charId,
+        matchId:   matchId,
+        pairCode:  returnPairCode,
+        apiKey:    apiKey,
+    }});
+})(request, response);
+
+
+/* ─────────────────────────────────────────────────────────
+   RESOURCE 22: POST /auth/login
+   HTTP Method: POST  |  Path: /auth/login
+   Requires Authentication: FALSE  ← must be unchecked in SN
+   ─────────────────────────────────────────────────────────
+   Body: { username, password }
+
+   Response:
+     200 { username, charId, matchId, pairCode, apiKey }
+     401 wrong password
+     404 account not found
+   ───────────────────────────────────────────────────────── */
+(function process(request, response) {
+    var body     = request.body && request.body.data;
+    var username = body ? (body.username || '').toString().trim() : '';
+    var password = body ? (body.password || '').toString()        : '';
+
+    if (!username || !password) {
+        response.setStatus(400);
+        response.setBody({ result: { error: '账号和密码不能为空' } });
         return;
     }
 
@@ -543,33 +797,42 @@
     gr.addQuery('u_username', username);
     gr.query();
 
-    if (gr.next()) {
-        // User found — update last_login, return charId + matchId from u_love_auth.u_match
-        gr.setValue('u_last_login', new GlideDateTime());
-        gr.update();
-        response.setStatus(200);
-        response.setBody({ result: {
-            success:  true,
-            action:   'login',
-            username: gr.getValue('u_username'),
-            charId:   gr.getValue('u_char_id'),
-            matchId:  gr.getValue('u_match') || ''
-        }});
-    } else {
-        // New user — auto-register (admin links u_match in SN after registration)
-        var newGr = new GlideRecord('u_love_auth');
-        newGr.initialize();
-        newGr.setValue('u_username',   username);
-        newGr.setValue('u_char_id',    charId);
-        newGr.setValue('u_last_login', new GlideDateTime());
-        newGr.insert();
-        response.setStatus(201);
-        response.setBody({ result: {
-            success:  true,
-            action:   'registered',
-            username: username,
-            charId:   charId,
-            matchId:  ''
-        }});
+    if (!gr.next()) {
+        response.setStatus(404);
+        response.setBody({ result: { error: '账号不存在，请先注册' } });
+        return;
     }
+
+    if (gr.getValue('u_password') !== password) {
+        response.setStatus(401);
+        response.setBody({ result: { error: '密码错误' } });
+        return;
+    }
+
+    // Refresh api_key on each login (optional but good practice)
+    var apiKey = gr.getValue('u_api_key') || GlideStringUtil.generateGUID();
+    gr.setValue('u_api_key',    apiKey);
+    gr.setValue('u_last_login', new GlideDateTime());
+    gr.update();
+
+    var matchId = gr.getValue('u_match') || '';
+
+    // Fetch pair_code from u_love_match so char1 can reshare it if needed
+    var pairCode = '';
+    if (matchId) {
+        var mGr = new GlideRecord('u_love_match');
+        if (mGr.get(matchId)) {
+            pairCode = mGr.getValue('u_pair_code') || '';
+        }
+    }
+
+    response.setStatus(200);
+    response.setBody({ result: {
+        success:  true,
+        username: gr.getValue('u_username'),
+        charId:   gr.getValue('u_char_id') || 'char1',
+        matchId:  matchId,
+        pairCode: pairCode,
+        apiKey:   apiKey,
+    }});
 })(request, response);
