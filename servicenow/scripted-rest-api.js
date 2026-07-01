@@ -47,7 +47,7 @@
   u_love_config    : u_mode→mode | u_reward_target→rewardTarget | u_punish_threshold→punishThreshold
   u_love_auth      : u_username→username | u_password→password | u_api_key→apiKey
                      u_char_id→charId | u_match→matchId | u_last_login→lastLogin
-  u_love_match     : sys_id=matchId | u_pair_code→pairCode
+  u_love_match     : sys_id=matchId | u_pair_code→pairCode | u_couple_name→coupleName (set on pairing)
   ============================================================
 */
 
@@ -107,13 +107,14 @@
             mode:            gr.getValue('u_mode') || 'reward',
             rewardTarget:    parseInt(gr.getValue('u_reward_target'))    || 100,
             punishThreshold: parseInt(gr.getValue('u_punish_threshold')) || -80,
+            startDate:       gr.getValue('u_start_date') || '',
             char1Name:       char1Name,
             char2Name:       char2Name,
             charImg1:        charImg1,
             charImg2:        charImg2,
         });
     } else {
-        response.setBody({ configured: false, char1Name: char1Name, char2Name: char2Name, charImg1: charImg1, charImg2: charImg2 });
+        response.setBody({ configured: false, startDate: '', char1Name: char1Name, char2Name: char2Name, charImg1: charImg1, charImg2: charImg2 });
     }
 })(request, response);
 
@@ -142,6 +143,7 @@
     if (body.mode            !== undefined) gr.setValue('u_mode',             body.mode);
     if (body.rewardTarget    !== undefined) gr.setValue('u_reward_target',    body.rewardTarget);
     if (body.punishThreshold !== undefined) gr.setValue('u_punish_threshold', body.punishThreshold);
+    if (body.startDate       !== undefined) gr.setValue('u_start_date',       body.startDate);
     if (isNew) { gr.insert(); } else { gr.update(); }
     response.setBody({ success: true });
 })(request, response);
@@ -269,11 +271,12 @@
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
+    var matchId = _au.getValue('u_match') || '';
 
     var id   = request.pathParams.id;
     var body = request.body.data;
     var gr   = new GlideRecord('x_887486_love_app_u_love_entry');
-    if (!gr.get(id)) {
+    if (!gr.get(id) || gr.getValue('u_match') !== matchId) {
         response.setStatus(404);
         response.setBody({ error: 'Not found' });
         return;
@@ -301,16 +304,17 @@
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
+    var matchId = _au.getValue('u_match') || '';
 
     var id = request.pathParams.id;
     var gr = new GlideRecord('x_887486_love_app_u_love_entry');
-    if (gr.get(id)) {
-        gr.deleteRecord();
-        response.setBody({ success: true });
-    } else {
+    if (!gr.get(id) || gr.getValue('u_match') !== matchId) {
         response.setStatus(404);
         response.setBody({ error: 'Not found' });
+        return;
     }
+    gr.deleteRecord();
+    response.setBody({ success: true });
 })(request, response);
 
 
@@ -491,11 +495,12 @@
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
+    var matchId = _au.getValue('u_match') || '';
 
     var id   = request.pathParams.id;
     var body = request.body.data;
     var gr   = new GlideRecord('x_887486_love_app_u_love_category');
-    if (!gr.get(id)) {
+    if (!gr.get(id) || gr.getValue('u_match') !== matchId) {
         response.setStatus(404);
         response.setBody({ error: 'Not found' });
         return;
@@ -520,16 +525,17 @@
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
+    var matchId = _au.getValue('u_match') || '';
 
     var id = request.pathParams.id;
     var gr = new GlideRecord('x_887486_love_app_u_love_category');
-    if (gr.get(id)) {
-        gr.deleteRecord();
-        response.setBody({ success: true });
-    } else {
+    if (!gr.get(id) || gr.getValue('u_match') !== matchId) {
         response.setStatus(404);
         response.setBody({ error: 'Not found' });
+        return;
     }
+    gr.deleteRecord();
+    response.setBody({ success: true });
 })(request, response);
 
 
@@ -572,11 +578,12 @@
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
+    var matchId = _au.getValue('u_match') || '';
 
     var id   = request.pathParams.id;
     var body = request.body.data;
     var gr   = new GlideRecord('x_887486_love_app_u_love_reward');
-    if (!gr.get(id)) {
+    if (!gr.get(id) || gr.getValue('u_match') !== matchId) {
         response.setStatus(404);
         response.setBody({ error: 'Not found' });
         return;
@@ -601,16 +608,17 @@
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
+    var matchId = _au.getValue('u_match') || '';
 
     var id = request.pathParams.id;
     var gr = new GlideRecord('x_887486_love_app_u_love_reward');
-    if (gr.get(id)) {
-        gr.deleteRecord();
-        response.setBody({ success: true });
-    } else {
+    if (!gr.get(id) || gr.getValue('u_match') !== matchId) {
         response.setStatus(404);
         response.setBody({ error: 'Not found' });
+        return;
     }
+    gr.deleteRecord();
+    response.setBody({ success: true });
 })(request, response);
 
 
@@ -653,11 +661,12 @@
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
+    var matchId = _au.getValue('u_match') || '';
 
     var id   = request.pathParams.id;
     var body = request.body.data;
     var gr   = new GlideRecord('x_887486_love_app_u_love_punishment');
-    if (!gr.get(id)) {
+    if (!gr.get(id) || gr.getValue('u_match') !== matchId) {
         response.setStatus(404);
         response.setBody({ error: 'Not found' });
         return;
@@ -682,16 +691,17 @@
     _au.addQuery('u_api_key', _tok);
     _au.query();
     if (!_au.next()) { response.setStatus(401); response.setBody({error:'Unauthorized'}); return; }
+    var matchId = _au.getValue('u_match') || '';
 
     var id = request.pathParams.id;
     var gr = new GlideRecord('x_887486_love_app_u_love_punishment');
-    if (gr.get(id)) {
-        gr.deleteRecord();
-        response.setBody({ success: true });
-    } else {
+    if (!gr.get(id) || gr.getValue('u_match') !== matchId) {
         response.setStatus(404);
         response.setBody({ error: 'Not found' });
+        return;
     }
+    gr.deleteRecord();
+    response.setBody({ success: true });
 })(request, response);
 
 
@@ -765,13 +775,31 @@
     if (matchId) authGr.setValue('u_match', matchId);
     authGr.insert();
 
+    var partnerName = '';
+    if (charId === 'char2' && matchId) {
+        var partnerGr = new GlideRecord('x_887486_love_app_u_love_auth');
+        partnerGr.addQuery('u_match', matchId);
+        partnerGr.addQuery('u_char_id', 'char1');
+        partnerGr.query();
+        if (partnerGr.next()) {
+            partnerName = partnerGr.getValue('u_username') || '';
+        }
+        // Set Couple Name on the match record as "char1Name_char2Name"
+        var updMatch = new GlideRecord('x_887486_love_app_u_love_match');
+        if (updMatch.get(matchId)) {
+            updMatch.setValue('u_couple_name', partnerName + '_' + username);
+            updMatch.update();
+        }
+    }
+
     response.setBody({
-        success:   true,
-        username:  username,
-        charId:    charId,
-        matchId:   matchId,
-        pairCode:  returnPairCode,
-        apiKey:    apiKey,
+        success:     true,
+        username:    username,
+        charId:      charId,
+        matchId:     matchId,
+        pairCode:    returnPairCode,
+        apiKey:      apiKey,
+        partnerName: partnerName,
     });
     response.setStatus(201);
 })(request, response);

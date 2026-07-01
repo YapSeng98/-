@@ -33,6 +33,7 @@ const App = (() => {
     matchId: '',
     historyRecords: [],
     needsSetup: false,
+    startDate: '',
   };
 
   /* ── Helpers ── */
@@ -181,6 +182,7 @@ const App = (() => {
         }
         if (cfg.char1Name) { S.charName1 = cfg.char1Name; localStorage.setItem('sn_charname1', cfg.char1Name); }
         if (cfg.char2Name) { S.charName2 = cfg.char2Name; localStorage.setItem('sn_charname2', cfg.char2Name); }
+        S.startDate = cfg.startDate || '';
         // Profile pictures come from SN auth records; blank if not set
         S.charImg1 = cfg.charImg1 || '';
         S.charImg2 = cfg.charImg2 || '';
@@ -602,6 +604,7 @@ const App = (() => {
     document.getElementById('month-label').textContent = monthLabel(S.month);
     renderMode();
     renderCharacters();
+    renderTogetherBanner();
 
     const entries = await Data.getEntries(S.month);
     S.entries = entries;
@@ -1141,6 +1144,7 @@ const App = (() => {
     document.getElementById('cfg-punish-threshold').value = S.punishThreshold;
     document.getElementById('cfg-name1').value = S.charName1 || 'Pochacco';
     document.getElementById('cfg-name2').value = S.charName2 || '阿呆';
+    document.getElementById('cfg-start-date').value = S.startDate || '';
     _refreshSettingsPreview();
     openModal('modal-settings');
   }
@@ -1148,16 +1152,54 @@ const App = (() => {
   async function saveConfig() {
     const rewardTarget    = parseInt(document.getElementById('cfg-reward-target').value)    || 100;
     const punishThreshold = parseInt(document.getElementById('cfg-punish-threshold').value) || -80;
-    const charName1 = document.getElementById('cfg-name1').value.trim() || 'Pochacco';
-    const charName2 = document.getElementById('cfg-name2').value.trim() || '阿呆';
+    const charName1   = document.getElementById('cfg-name1').value.trim() || 'Pochacco';
+    const charName2   = document.getElementById('cfg-name2').value.trim() || '阿呆';
+    const startDate   = document.getElementById('cfg-start-date').value  || '';
     S.rewardTarget    = rewardTarget;
     S.punishThreshold = punishThreshold;
     S.charName1       = charName1;
     S.charName2       = charName2;
-    await Data.saveConfig({ mode: S.mode, rewardTarget, punishThreshold, charName1, charName2, charImg1: S.charImg1, charImg2: S.charImg2 });
+    S.startDate       = startDate;
+    await Data.saveConfig({ mode: S.mode, rewardTarget, punishThreshold, charName1, charName2, startDate, charImg1: S.charImg1, charImg2: S.charImg2 });
     closeModal('modal-settings');
     await refresh();
+    renderTogetherBanner();
     showToast('设置已保存 ✅');
+  }
+
+  function renderTogetherBanner() {
+    const el = document.getElementById('together-days');
+    if (!el) return;
+    if (!S.startDate) { el.textContent = '-- 天'; return; }
+    const start = new Date(S.startDate);
+    const days  = Math.floor((Date.now() - start.getTime()) / 86400000);
+    el.textContent = days >= 0 ? `${days} 天` : '-- 天';
+  }
+
+  function showLovePage() {
+    const pg = document.getElementById('love-page');
+    if (!pg) return;
+    // Populate content
+    const n1 = document.getElementById('love-name1');
+    const n2 = document.getElementById('love-name2');
+    const dn = document.getElementById('love-days-num');
+    const sd = document.getElementById('love-since-date');
+    if (n1) n1.textContent = S.charName1 || '--';
+    if (n2) n2.textContent = S.charName2 || '--';
+    if (S.startDate) {
+      const start = new Date(S.startDate);
+      const days  = Math.floor((Date.now() - start.getTime()) / 86400000);
+      if (dn) dn.textContent = days >= 0 ? days : '--';
+      if (sd) sd.textContent = S.startDate;
+    } else {
+      if (dn) dn.textContent = '--';
+      if (sd) sd.textContent = '未设置（可在设置中添加）';
+    }
+    pg.classList.add('open');
+  }
+
+  function closeLovePage() {
+    document.getElementById('love-page')?.classList.remove('open');
   }
 
   function logout() {
@@ -1472,6 +1514,7 @@ const App = (() => {
     openManage, openManageFromTable, openEditForm, saveEditForm,
     toggleCategoryActive, confirmDeleteItem,
     openModal, closeModal,
+    showLovePage, closeLovePage,
   };
 })();
 
@@ -1487,12 +1530,14 @@ function startApp() {
     if (el) el.remove();
 
     const savedName = localStorage.getItem('sn_username');
-    if (savedName) {
-      const nameEl = document.getElementById('sn-username');
-      if (nameEl) nameEl.value = savedName;
-      const btn = document.getElementById('sn-connect-btn');
-      if (btn) btn.textContent = `继续 (${savedName}) →`;
-    }
+    const nameEl = document.getElementById('sn-username');
+    const btn    = document.getElementById('sn-connect-btn');
+    if (savedName && nameEl) nameEl.value = savedName;
+    const updateBtn = () => {
+      if (btn) btn.textContent = `继续 (${nameEl?.value?.trim() || savedName || '…'}) →`;
+    };
+    updateBtn();
+    nameEl?.addEventListener('input', updateBtn);
 
     document.getElementById('setup-overlay').classList.remove('hidden');
   }

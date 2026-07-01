@@ -17,6 +17,7 @@
     if (body.mode            !== undefined) gr.setValue('u_mode',             body.mode);
     if (body.rewardTarget    !== undefined) gr.setValue('u_reward_target',    body.rewardTarget);
     if (body.punishThreshold !== undefined) gr.setValue('u_punish_threshold', body.punishThreshold);
+    if (body.startDate       !== undefined) gr.setValue('u_start_date',       body.startDate);
     if (isNew) { gr.insert(); } else { gr.update(); }
     response.setBody({ success: true });
 })(request, response);

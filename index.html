@@ -536,6 +536,74 @@
     .nav-settle .nav-icon { filter: none; }
 
     /* ── Modals ── */
+    /* ── Love page (full-screen slide-in) ── */
+    .love-page {
+      position: fixed; inset: 0; z-index: 90;
+      background: linear-gradient(160deg, #fde8f0 0%, #e8d5f5 40%, #d4e8ff 100%);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 56px 28px 40px;
+      transform: translateX(100%);
+      transition: transform 0.38s cubic-bezier(0.4,0,0.2,1);
+      overflow-y: auto;
+    }
+    .love-page.open { transform: translateX(0); }
+    .love-page-back {
+      position: absolute; top: 20px; left: 18px;
+      background: rgba(255,255,255,0.7); border: none; border-radius: 50px;
+      padding: 8px 16px; font-size: 14px; font-weight: 600; color: var(--text);
+      cursor: pointer; display: flex; align-items: center; gap: 5px;
+    }
+    .love-page-title {
+      font-size: 15px; font-weight: 700; color: #c06090; letter-spacing: .08em;
+      text-transform: uppercase; margin-bottom: 24px;
+    }
+    .love-heart-pulse {
+      font-size: 56px; animation: heartbeat 1.4s ease-in-out infinite;
+      margin-bottom: 18px;
+    }
+    .love-days-num {
+      font-size: 88px; font-weight: 900; line-height: 1;
+      background: linear-gradient(135deg, #e8609a 0%, #a06dd0 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .love-days-label {
+      font-size: 22px; font-weight: 700; color: #b05090; margin-top: 2px; margin-bottom: 28px;
+    }
+    .love-since-card {
+      background: rgba(255,255,255,0.75); border-radius: 20px;
+      padding: 18px 28px; text-align: center; margin-bottom: 24px;
+      width: 100%; max-width: 320px; box-shadow: 0 4px 20px rgba(200,120,180,0.15);
+    }
+    .love-since-label { font-size: 12px; color: #b070a0; font-weight: 600; margin-bottom: 6px; }
+    .love-since-date  { font-size: 20px; font-weight: 800; color: var(--dark); }
+    .love-names-row {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 17px; font-weight: 700; color: var(--dark); margin-bottom: 36px;
+    }
+    .love-names-heart { font-size: 22px; animation: heartbeat 1.4s ease-in-out infinite; }
+    .love-goto-score {
+      background: linear-gradient(135deg, #e8609a, #a06dd0);
+      color: white; border: none; border-radius: 50px;
+      padding: 16px 40px; font-size: 16px; font-weight: 700;
+      cursor: pointer; box-shadow: 0 6px 20px rgba(200,100,160,0.35);
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* ── Together banner on home ── */
+    .together-banner {
+      background: linear-gradient(135deg,rgba(232,96,154,0.12),rgba(160,109,208,0.12));
+      border: 1.5px solid rgba(232,96,154,0.22);
+      border-radius: 16px; padding: 11px 18px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin: 0 0 14px; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .together-banner:active { transform: scale(0.97); }
+    .together-banner-left  { display: flex; align-items: center; gap: 9px; }
+    .together-banner-days  { font-size: 22px; font-weight: 900; color: #c05090; line-height: 1; }
+    .together-banner-sub   { font-size: 12px; color: #a06080; font-weight: 600; }
+    .together-banner-arrow { font-size: 16px; color: #c05090; opacity: 0.7; }
+
     .modal-overlay {
       position: fixed; inset: 0; z-index: 80;
       background: rgba(30,40,60,0.45);
@@ -1312,6 +1380,18 @@
     </div>
   </div>
 
+  <!-- Together banner -->
+  <div class="together-banner" id="together-banner" onclick="App.showLovePage()">
+    <div class="together-banner-left">
+      <span style="font-size:20px">💑</span>
+      <div>
+        <div class="together-banner-days" id="together-days">-- 天</div>
+        <div class="together-banner-sub">在一起的时光</div>
+      </div>
+    </div>
+    <div class="together-banner-arrow">›</div>
+  </div>
+
   <!-- Score card -->
   <div class="score-card">
     <div class="score-card-header">
@@ -1354,6 +1434,27 @@
   <div class="entries-list" id="entries-list">
     <div class="loading"><div class="spinner"></div> 加载中…</div>
   </div>
+</div>
+
+<!-- Love page (full-screen) -->
+<div class="love-page" id="love-page">
+  <button class="love-page-back" onclick="App.closeLovePage()">‹ 返回</button>
+  <div class="love-page-title">我们的时光</div>
+  <div class="love-heart-pulse">💕</div>
+  <div class="love-days-num" id="love-days-num">--</div>
+  <div class="love-days-label">天在一起</div>
+  <div class="love-since-card">
+    <div class="love-since-label">在一起开始日期</div>
+    <div class="love-since-date" id="love-since-date">--</div>
+  </div>
+  <div class="love-names-row">
+    <span id="love-name1">--</span>
+    <span class="love-names-heart">❤️</span>
+    <span id="love-name2">--</span>
+  </div>
+  <button class="love-goto-score" onclick="App.closeLovePage()">
+    📊 前往积分追踪
+  </button>
 </div>
 
 <!-- Bottom nav -->
@@ -1483,6 +1584,13 @@
         <div class="char-picker-label" id="img2-name">🩷 角色二</div>
         <div class="char-picker-btn">📷 更换图片</div>
       </div>
+    </div>
+
+    <!-- Together start date -->
+    <div style="font-size:12px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">在一起日期</div>
+    <div class="modal-field">
+      <label>💑 开始在一起的日期</label>
+      <input id="cfg-start-date" type="date"/>
     </div>
 
     <!-- Score thresholds -->

@@ -37,12 +37,13 @@
             mode:            gr.getValue('u_mode') || 'reward',
             rewardTarget:    parseInt(gr.getValue('u_reward_target'))    || 100,
             punishThreshold: parseInt(gr.getValue('u_punish_threshold')) || -80,
+            startDate:       gr.getValue('u_start_date') || '',
             char1Name:       char1Name,
             char2Name:       char2Name,
             charImg1:        charImg1,
             charImg2:        charImg2,
         });
     } else {
-        response.setBody({ configured: false, char1Name: char1Name, char2Name: char2Name, charImg1: charImg1, charImg2: charImg2 });
+        response.setBody({ configured: false, startDate: '', char1Name: char1Name, char2Name: char2Name, charImg1: charImg1, charImg2: charImg2 });
     }
 })(request, response);
