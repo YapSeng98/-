@@ -559,56 +559,174 @@
     /* ── Love page (full-screen slide-in) ── */
     .love-page {
       position: fixed; inset: 0; z-index: 90;
-      background: linear-gradient(160deg, #fde8f0 0%, #e8d5f5 40%, #d4e8ff 100%);
+      background: linear-gradient(170deg,
+        #0d001f 0%, #1e0438 18%,
+        #380a5a 34%, #5a0e70 50%,
+        #8a1878 65%, #ba2878 80%,
+        #e84090 100%);
       display: flex; flex-direction: column; align-items: center;
-      padding: 56px 28px 40px;
+      padding: 72px 24px 52px;
       transform: translateX(100%);
       transition: transform 0.38s cubic-bezier(0.4,0,0.2,1);
-      overflow-y: auto;
+      overflow-y: auto; overflow-x: hidden;
     }
     .love-page.open { transform: translateX(0); }
-    .love-page-back {
-      position: absolute; top: 20px; left: 18px;
-      background: rgba(255,255,255,0.7); border: none; border-radius: 50px;
-      padding: 8px 16px; font-size: 14px; font-weight: 600; color: var(--text);
-      cursor: pointer; display: flex; align-items: center; gap: 5px;
+
+    /* Rising particles */
+    .lp-particles {
+      position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
     }
+    .lp-p {
+      position: absolute; bottom: -50px; font-size: 18px; opacity: 0;
+      left: var(--x, 50%);
+      animation: lp-rise 8s ease-out infinite;
+      animation-delay: var(--d, 0s);
+    }
+    @keyframes lp-rise {
+      0%   { transform: translateY(0) scale(0.5); opacity: 0; }
+      8%   { opacity: 0.75; }
+      85%  { opacity: 0.25; }
+      100% { transform: translateY(calc(-100vh - 60px)) scale(1.2); opacity: 0; }
+    }
+
+    .love-page-back {
+      position: absolute; top: 18px; left: 16px; z-index: 10;
+      background: rgba(255,255,255,0.14);
+      border: 1.5px solid rgba(255,255,255,0.28);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      border-radius: 50px; padding: 9px 18px;
+      font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9);
+      cursor: pointer; display: flex; align-items: center; gap: 4px;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .love-page-back:active { transform: scale(0.95); }
+
     .love-page-title {
-      font-size: 15px; font-weight: 700; color: #c06090; letter-spacing: .08em;
-      text-transform: uppercase; margin-bottom: 24px;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.20em;
+      text-transform: uppercase; color: rgba(255,255,255,0.50);
+      position: relative; z-index: 1; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .love-page-title::before, .love-page-title::after {
+      content: ''; display: block; width: 28px; height: 1px;
+      background: rgba(255,255,255,0.22);
+    }
+
+    /* Hero */
+    .lp-hero {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column; align-items: center;
+      margin-bottom: 22px;
+    }
+    .lp-heart-wrap {
+      position: relative; width: 110px; height: 110px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 2px;
     }
     .love-heart-pulse {
-      font-size: 56px; animation: heartbeat 1.4s ease-in-out infinite;
-      margin-bottom: 18px;
+      font-size: 64px;
+      animation: lp-heartbeat 1.5s ease-in-out infinite;
+      filter: drop-shadow(0 0 28px rgba(255,100,160,0.95));
+      display: block; position: relative; z-index: 1;
+    }
+    @keyframes lp-heartbeat {
+      0%,100% { transform: scale(1); }
+      14%     { transform: scale(1.24); }
+      28%     { transform: scale(1.06); }
+      42%     { transform: scale(1.16); }
+      56%     { transform: scale(1); }
+    }
+    .lp-orbit-dot {
+      position: absolute; font-size: 18px; z-index: 0;
+      animation: lp-orbit 5s linear infinite;
+    }
+    .lp-orbit-dot:nth-child(3) { animation-delay: -2.5s; }
+    @keyframes lp-orbit {
+      from { transform: rotate(0deg) translateX(54px) rotate(0deg); }
+      to   { transform: rotate(360deg) translateX(54px) rotate(-360deg); }
     }
     .love-days-num {
-      font-size: 88px; font-weight: 900; line-height: 1;
-      background: linear-gradient(135deg, #e8609a 0%, #a06dd0 100%);
+      font-size: 108px; font-weight: 900; line-height: 0.95; letter-spacing: -4px;
+      background: linear-gradient(160deg, #fff 0%, #ffd6ec 38%, #ff90c8 70%, #e040a0 100%);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
+      filter: drop-shadow(0 2px 18px rgba(255,100,180,0.55));
+      position: relative; z-index: 1;
     }
     .love-days-label {
-      font-size: 22px; font-weight: 700; color: #b05090; margin-top: 2px; margin-bottom: 28px;
+      font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.80);
+      letter-spacing: 0.08em; margin-top: 6px; position: relative; z-index: 1;
     }
+
+    /* Stats row */
+    .lp-stats {
+      display: flex; align-items: stretch; gap: 8px;
+      width: 100%; max-width: 310px;
+      margin: 0 0 18px; position: relative; z-index: 1;
+    }
+    .lp-stat {
+      flex: 1; text-align: center;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.18);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      border-radius: 18px; padding: 13px 6px;
+    }
+    .lp-stat-n { font-size: 22px; font-weight: 900; color: white; line-height: 1; }
+    .lp-stat-l { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.52); margin-top: 3px; }
+    .lp-stat-sep { display: flex; align-items: center; font-size: 14px; opacity: 0.45; color: white; }
+
+    /* Since card */
     .love-since-card {
-      background: rgba(255,255,255,0.75); border-radius: 20px;
-      padding: 18px 28px; text-align: center; margin-bottom: 24px;
-      width: 100%; max-width: 320px; box-shadow: 0 4px 20px rgba(200,120,180,0.15);
+      width: 100%; max-width: 310px;
+      background: rgba(255,255,255,0.10);
+      border: 1.5px solid rgba(255,255,255,0.20);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-radius: 22px; padding: 16px 20px;
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 12px; position: relative; z-index: 1;
     }
-    .love-since-label { font-size: 12px; color: #b070a0; font-weight: 600; margin-bottom: 6px; }
-    .love-since-date  { font-size: 20px; font-weight: 800; color: var(--dark); }
+    .lp-since-icon { font-size: 28px; flex-shrink: 0; }
+    .love-since-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: rgba(255,255,255,0.52); margin-bottom: 5px;
+    }
+    .love-since-date { font-size: 20px; font-weight: 800; color: white; letter-spacing: 1px; }
+
+    /* Names card */
     .love-names-row {
-      display: flex; align-items: center; gap: 12px;
-      font-size: 17px; font-weight: 700; color: var(--dark); margin-bottom: 36px;
+      width: 100%; max-width: 310px;
+      background: rgba(255,255,255,0.10);
+      border: 1.5px solid rgba(255,255,255,0.20);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-radius: 22px; padding: 16px 20px;
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; margin-bottom: 30px; position: relative; z-index: 1;
     }
-    .love-names-heart { font-size: 22px; animation: heartbeat 1.4s ease-in-out infinite; }
+    .lp-name-block {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px;
+    }
+    .lp-name-emoji { font-size: 26px; }
+    .lp-name-text  { font-size: 16px; font-weight: 800; color: white; }
+    .love-names-heart { font-size: 28px; animation: lp-heartbeat 1.5s ease-in-out infinite; }
+
+    /* CTA button */
     .love-goto-score {
-      background: linear-gradient(135deg, #e8609a, #a06dd0);
-      color: white; border: none; border-radius: 50px;
-      padding: 16px 40px; font-size: 16px; font-weight: 700;
-      cursor: pointer; box-shadow: 0 6px 20px rgba(200,100,160,0.35);
-      display: flex; align-items: center; gap: 8px;
+      position: relative; z-index: 1;
+      width: 100%; max-width: 310px;
+      background: rgba(255,255,255,0.18);
+      border: 1.5px solid rgba(255,255,255,0.38);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      color: white; border-radius: 50px;
+      padding: 17px 32px; font-size: 16px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.30);
+      transition: transform 0.15s, background 0.2s; overflow: hidden;
     }
+    .love-goto-score::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 60%);
+    }
+    .love-goto-score:active { transform: scale(0.97); }
 
     /* ── Together banner on home ── */
     .together-banner {
@@ -1543,20 +1661,73 @@
 
 <!-- Love page (full-screen) -->
 <div class="love-page" id="love-page">
+  <!-- Rising particles -->
+  <div class="lp-particles">
+    <span class="lp-p" style="--x:7%;--d:0s">💕</span>
+    <span class="lp-p" style="--x:19%;--d:1.6s">✨</span>
+    <span class="lp-p" style="--x:33%;--d:3.2s">💖</span>
+    <span class="lp-p" style="--x:50%;--d:4.8s">🌸</span>
+    <span class="lp-p" style="--x:64%;--d:1.1s">💗</span>
+    <span class="lp-p" style="--x:78%;--d:2.7s">✨</span>
+    <span class="lp-p" style="--x:89%;--d:5.6s">💫</span>
+    <span class="lp-p" style="--x:42%;--d:2.1s">💕</span>
+    <span class="lp-p" style="--x:72%;--d:6.4s">🌸</span>
+  </div>
+
   <button class="love-page-back" onclick="App.closeLovePage()">‹ 返回</button>
   <div class="love-page-title">我们的时光</div>
-  <div class="love-heart-pulse">💕</div>
-  <div class="love-days-num" id="love-days-num">--</div>
-  <div class="love-days-label">天在一起</div>
+
+  <!-- Hero -->
+  <div class="lp-hero">
+    <div class="lp-heart-wrap">
+      <span class="love-heart-pulse">💕</span>
+      <span class="lp-orbit-dot">💙</span>
+      <span class="lp-orbit-dot">🩷</span>
+    </div>
+    <div class="love-days-num" id="love-days-num">--</div>
+    <div class="love-days-label">天在一起</div>
+  </div>
+
+  <!-- Stats row -->
+  <div class="lp-stats">
+    <div class="lp-stat">
+      <div class="lp-stat-n" id="lp-months">--</div>
+      <div class="lp-stat-l">个月</div>
+    </div>
+    <div class="lp-stat-sep">·</div>
+    <div class="lp-stat">
+      <div class="lp-stat-n" id="lp-weeks">--</div>
+      <div class="lp-stat-l">周</div>
+    </div>
+    <div class="lp-stat-sep">·</div>
+    <div class="lp-stat">
+      <div class="lp-stat-n" id="lp-days2">--</div>
+      <div class="lp-stat-l">天</div>
+    </div>
+  </div>
+
+  <!-- Date card -->
   <div class="love-since-card">
-    <div class="love-since-label">在一起开始日期</div>
-    <div class="love-since-date" id="love-since-date">--</div>
+    <span class="lp-since-icon">📅</span>
+    <div>
+      <div class="love-since-label">在一起开始日期</div>
+      <div class="love-since-date" id="love-since-date">--</div>
+    </div>
   </div>
+
+  <!-- Names card -->
   <div class="love-names-row">
-    <span id="love-name1">--</span>
+    <div class="lp-name-block">
+      <span class="lp-name-emoji">💙</span>
+      <span class="lp-name-text" id="love-name1">--</span>
+    </div>
     <span class="love-names-heart">❤️</span>
-    <span id="love-name2">--</span>
+    <div class="lp-name-block">
+      <span class="lp-name-emoji">🩷</span>
+      <span class="lp-name-text" id="love-name2">--</span>
+    </div>
   </div>
+
   <button class="love-goto-score" onclick="App.closeLovePage()">
     📊 前往积分追踪
   </button>
