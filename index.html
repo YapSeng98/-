@@ -1034,75 +1034,48 @@
       letter-spacing: 0.03em;
     }
 
-    /* ── Couple Scene (no boxes, mobile-safe) ── */
+    /* ── Couple Scene ── */
     .sp-couple-scene {
-      display: flex; align-items: center; justify-content: center;
-      gap: 6px; width: 100%; max-width: 310px;
-      margin: 10px 0 18px;
-      /* clip bottom so rising hearts never reach the button */
-      clip-path: inset(-200px -20px 0 -20px);
+      display: flex; align-items: flex-end; justify-content: center;
+      gap: 10px; width: 100%; margin: 12px 0 20px;
     }
-    /* character containers — floating in open air, no border */
     .sp-couple-char {
-      display: flex; flex-direction: column; align-items: center;
-      flex-shrink: 0; position: relative;
+      flex-shrink: 0;
+      animation: sp-char-float 3s ease-in-out infinite;
     }
-    .sp-couple-char.c1 {
-      animation: sp-char-float 3.2s ease-in-out infinite;
-    }
-    .sp-couple-char.c2 {
-      animation: sp-char-float 3.2s ease-in-out infinite -1.6s;
-    }
+    .sp-couple-char.c2 { animation-delay: -1.5s; }
     @keyframes sp-char-float {
       0%,100% { transform: translateY(0); }
-      50%     { transform: translateY(-12px); }
+      50%     { transform: translateY(-10px); }
     }
-    /* soft aura glow — inset pseudo so it never breaks layout */
-    .sp-char-aura {
-      position: absolute; border-radius: 50%; z-index: 0; pointer-events: none;
-      width: 100px; height: 100px; top: 50%; left: 50%;
-      transform: translate(-50%, -48%);
-      animation: aura-pulse 3s ease-in-out infinite;
+    /* glow applied directly as drop-shadow on the SVG — no extra DOM elements */
+    .sp-couple-char.c1 .char-svg {
+      display: block; width: 92px !important; height: 108px !important;
+      filter: drop-shadow(0 0 18px rgba(91,155,213,0.65))
+              drop-shadow(0 6px 10px rgba(0,0,0,0.12)) !important;
     }
-    .sp-char-aura.c1-aura {
-      background: radial-gradient(circle, rgba(91,155,213,0.42) 0%, transparent 68%);
-    }
-    .sp-char-aura.c2-aura {
-      background: radial-gradient(circle, rgba(255,100,150,0.42) 0%, transparent 68%);
-      animation-delay: -1.5s;
-    }
-    @keyframes aura-pulse {
-      0%,100% { transform: translate(-50%,-48%) scale(1); opacity: 0.75; }
-      50%     { transform: translate(-50%,-48%) scale(1.22); opacity: 1; }
-    }
-    #sp-char-img-1, #sp-char-img-2 {
-      position: relative; z-index: 1;
-      display: flex; align-items: center; justify-content: center;
-    }
-    /* character SVG size — smaller on mobile to stay above button */
-    .sp-couple-char .char-svg {
-      display: block; width: 88px !important; height: 104px !important;
-      filter: drop-shadow(0 5px 12px rgba(0,0,0,0.13)) !important;
+    .sp-couple-char.c2 .char-svg {
+      display: block; width: 92px !important; height: 108px !important;
+      filter: drop-shadow(0 0 18px rgba(255,90,150,0.65))
+              drop-shadow(0 6px 10px rgba(0,0,0,0.12)) !important;
     }
     /* ── Rising hearts between characters ── */
     .sp-hearts-col {
-      flex-shrink: 0; width: 44px;
-      position: relative; height: 104px;
-      /* overflow visible so hearts float up, clipped by parent clip-path */
-      overflow: visible;
+      flex-shrink: 0; width: 42px; height: 108px;
+      position: relative; overflow: visible;
     }
     .sp-fheart {
-      position: absolute; bottom: 10px; left: 50%;
+      position: absolute; bottom: 4px; left: 50%;
       transform: translateX(-50%);
-      font-size: 16px; opacity: 0;
-      animation: sp-heart-rise 2.6s ease-out infinite;
+      font-size: 15px; opacity: 0;
+      animation: sp-heart-rise 2.8s ease-out infinite;
       animation-delay: var(--d, 0s);
     }
     @keyframes sp-heart-rise {
       0%   { transform: translateX(-50%) translateY(0) scale(0.5); opacity: 0; }
       15%  { opacity: 1; }
-      85%  { opacity: 0.7; }
-      100% { transform: translateX(-50%) translateY(-130px) scale(1.1); opacity: 0; }
+      80%  { opacity: 0.8; }
+      100% { transform: translateX(-50%) translateY(-120px) scale(1.15); opacity: 0; }
     }
     /* ── Start button ── */
     .sp-btn {
@@ -1129,9 +1102,10 @@
       text-align: center; line-height: 1.5; margin: 0;
     }
     @media (max-width: 380px) {
-      .sp-couple-char .char-svg { width: 74px !important; height: 87px !important; }
-      .sp-hearts-col { width: 36px; height: 87px; }
-      .sp-couple-scene { gap: 4px; margin-bottom: 14px; }
+      .sp-couple-char.c1 .char-svg,
+      .sp-couple-char.c2 .char-svg { width: 76px !important; height: 90px !important; }
+      .sp-hearts-col { width: 34px; height: 90px; }
+      .sp-couple-scene { gap: 6px; margin-bottom: 16px; }
       .sp-btn { font-size: 14px; padding: 13px 16px; }
     }
   </style>
@@ -1157,9 +1131,8 @@
     <!-- Couple scene: two free-floating characters + rising hearts -->
     <div class="sp-couple-scene">
 
-      <!-- Boy (char1) — leans toward center -->
+      <!-- Boy (char1) -->
       <div class="sp-couple-char c1">
-        <div class="sp-char-aura c1-aura"></div>
         <div id="sp-char-img-1">
           <svg class="char-svg" viewBox="0 0 110 132" xmlns="http://www.w3.org/2000/svg">
             <!-- shadow -->
@@ -1210,9 +1183,8 @@
         <span class="sp-fheart" style="--d:2.7s">✨</span>
       </div>
 
-      <!-- Girl (char2) — leans toward center -->
+      <!-- Girl (char2) -->
       <div class="sp-couple-char c2">
-        <div class="sp-char-aura c2-aura"></div>
         <div id="sp-char-img-2">
           <svg class="char-svg" viewBox="0 0 110 132" xmlns="http://www.w3.org/2000/svg">
             <!-- shadow -->
