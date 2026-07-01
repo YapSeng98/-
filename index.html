@@ -1033,27 +1033,10 @@
       letter-spacing: 0.03em;
     }
 
-    /* ── 3D Frosted Glass Card ── */
-    .sp-couple-card {
-      width: 100%;
-      background: linear-gradient(170deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.16) 100%);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1.5px solid rgba(255,255,255,0.58);
-      border-radius: 30px;
-      padding: 18px 16px 10px;
-      margin-bottom: 14px;
-      box-shadow:
-        inset 0 1.5px 0 rgba(255,255,255,0.75),
-        inset 0 -1px 0 rgba(200,180,255,0.25),
-        0 14px 40px rgba(140,100,220,0.20),
-        0 4px 12px rgba(0,0,0,0.08);
-    }
-
-    /* ── Couple Scene inside the card ── */
+    /* ── Couple Scene — open air, no box ── */
     .sp-couple-scene {
       display: flex; align-items: flex-end; justify-content: center;
-      gap: 8px; width: 100%;
+      gap: 10px; width: 100%; margin: 18px 0 28px;
     }
     .sp-couple-char {
       flex-shrink: 0;
@@ -1131,10 +1114,9 @@
     }
     @media (max-width: 380px) {
       .sp-couple-char.c1 .char-svg,
-      .sp-couple-char.c2 .char-svg { width: 70px !important; height: 82px !important; }
-      .sp-hearts-col { width: 32px; height: 82px; }
-      .sp-couple-scene { gap: 6px; }
-      .sp-couple-card { padding: 14px 12px 8px; margin-bottom: 12px; }
+      .sp-couple-char.c2 .char-svg { width: 72px !important; height: 84px !important; }
+      .sp-hearts-col { width: 34px; height: 84px; }
+      .sp-couple-scene { gap: 6px; margin: 14px 0 22px; }
       .sp-btn { font-size: 14px; padding: 14px 16px; }
     }
   </style>
@@ -1157,8 +1139,7 @@
     <div class="sp-title">恋爱积分簿</div>
     <p class="sp-tagline">记录每一份甜蜜与爱 🌸</p>
 
-    <!-- 3D frosted glass card with couple animation -->
-    <div class="sp-couple-card">
+    <!-- Couple animation — open air above the button -->
     <div class="sp-couple-scene">
 
       <!-- Boy (char1) -->
@@ -1267,7 +1248,6 @@
         </div>
       </div>
     </div>
-    </div><!-- end .sp-couple-card -->
 
     <button class="sp-btn" onclick="startApp()">
       💕 开始我们的故事
