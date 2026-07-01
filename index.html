@@ -981,7 +981,7 @@
     /* ── Start / splash page ── */
     #start-page {
       position: fixed; inset: 0; z-index: 60;
-      background: linear-gradient(160deg, #B8D9F8 0%, #CEEAFF 28%, #E8E2FF 60%, #FFE2F0 100%);
+      background: linear-gradient(155deg, #A8C8F8 0%, #C0D4FF 20%, #D8C8FF 45%, #F8C0E0 75%, #FFB0D0 100%);
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       padding: 20px 24px; overflow-y: auto;
       animation: sp-enter 0.7s cubic-bezier(0.22,1,0.36,1);
@@ -991,114 +991,140 @@
       pointer-events: none;
     }
     @keyframes sp-enter {
-      from { opacity: 0; transform: scale(0.96) translateY(16px); }
+      from { opacity: 0; transform: scale(0.94) translateY(20px); }
       to   { opacity: 1; transform: scale(1) translateY(0); }
     }
     @keyframes sp-exit {
       0%   { opacity: 1; transform: translateY(0) scale(1); }
       100% { opacity: 0; transform: translateY(-60px) scale(0.94); }
     }
+    /* floating sakura / star decos */
     .sp-deco {
-      position: absolute; font-size: 18px; opacity: 0.12; pointer-events: none;
-      animation: deco-float 7s ease-in-out infinite;
+      position: absolute; font-size: 22px; pointer-events: none;
+      animation: sp-deco-drift 8s ease-in-out infinite;
+    }
+    @keyframes sp-deco-drift {
+      0%,100% { transform: translateY(0) rotate(0deg); opacity: 0.18; }
+      33%     { transform: translateY(-18px) rotate(8deg); opacity: 0.28; }
+      66%     { transform: translateY(-8px) rotate(-5deg); opacity: 0.22; }
     }
     .sp-content {
       display: flex; flex-direction: column; align-items: center;
-      gap: 6px; text-align: center; width: 100%; max-width: 340px;
+      gap: 4px; text-align: center; width: 100%; max-width: 340px;
       position: relative; z-index: 1;
     }
     .sp-paw-logo {
-      font-size: 44px; line-height: 1;
-      animation: sp-bounce 2.2s ease-in-out infinite;
-      filter: drop-shadow(0 4px 10px rgba(91,155,213,0.35));
+      font-size: 36px; line-height: 1;
+      animation: sp-bounce 2.4s ease-in-out infinite;
+      filter: drop-shadow(0 3px 8px rgba(120,100,200,0.30));
     }
     @keyframes sp-bounce {
-      0%,100% { transform: translateY(0) rotate(-6deg); }
-      50%     { transform: translateY(-10px) rotate(6deg); }
+      0%,100% { transform: translateY(0) rotate(-8deg) scale(1); }
+      50%     { transform: translateY(-10px) rotate(8deg) scale(1.08); }
     }
     .sp-title {
       font-size: 30px; font-weight: 900; margin: 2px 0 0;
-      background: linear-gradient(130deg, #2E7BD5 0%, #7B6CF5 50%, #FF6FA0 100%);
+      background: linear-gradient(130deg, #2E6ED5 0%, #8B6CF5 48%, #FF5FA0 100%);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
       letter-spacing: 0.03em; line-height: 1.1;
+      filter: drop-shadow(0 2px 8px rgba(140,108,245,0.25));
     }
     .sp-tagline {
-      font-size: 13px; color: var(--sub); font-weight: 500; margin: 0;
-      letter-spacing: 0.02em;
+      font-size: 13px; color: #9090C0; font-weight: 500; margin: 0;
+      letter-spacing: 0.03em;
     }
-    /* ── Chars row: [CHAR1] 💙 [CHAR2] ── */
-    .sp-main-row {
-      display: flex; align-items: center; justify-content: center;
-      gap: 18px; width: 100%; max-width: 320px; margin: 16px 0 10px;
+
+    /* ── Couple Scene (no boxes) ── */
+    .sp-couple-scene {
+      display: flex; align-items: flex-end; justify-content: center;
+      gap: 10px; width: 100%; max-width: 320px; margin: 14px 0 8px;
+      position: relative;
     }
-    .sp-char-card {
-      display: flex; flex-direction: column; align-items: center; gap: 8px;
-      padding: 16px 12px 12px; border-radius: 28px; flex-shrink: 0;
-      width: 120px;
+    /* character containers — no box, just floating */
+    .sp-couple-char {
+      display: flex; flex-direction: column; align-items: center;
+      position: relative; flex-shrink: 0;
     }
-    .sp-char-card.c1 {
-      background: linear-gradient(170deg, #EBF4FF 0%, #FFFFFF 100%);
-      border: 2.5px solid #5B9BD5;
-      box-shadow: 0 10px 32px rgba(91,155,213,0.30);
-      animation: sp-char-float 3.0s ease-in-out infinite;
+    .sp-couple-char.c1 {
+      animation: sp-char-float 3.2s ease-in-out infinite;
     }
-    .sp-char-card.c2 {
-      background: linear-gradient(170deg, #FFF0F7 0%, #FFFFFF 100%);
-      border: 2.5px solid #FF8FA0;
-      box-shadow: 0 10px 32px rgba(255,143,160,0.30);
-      animation: sp-char-float 3.0s ease-in-out infinite -1.5s;
+    .sp-couple-char.c2 {
+      animation: sp-char-float 3.2s ease-in-out infinite -1.6s;
     }
     @keyframes sp-char-float {
-      0%,100% { transform: translateY(0); }
-      50%     { transform: translateY(-12px); }
+      0%,100% { transform: translateY(0) rotate(-2deg); }
+      50%     { transform: translateY(-14px) rotate(2deg); }
     }
-    #sp-char-img-1 {
-      width: 84px; height: 100px;
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden; border-radius: 14px;
+    /* soft aura glow behind each character */
+    .sp-char-aura {
+      position: absolute; border-radius: 50%; z-index: 0;
+      width: 120px; height: 120px; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      animation: aura-pulse 3s ease-in-out infinite;
+      pointer-events: none;
     }
-    #sp-char-img-2 {
-      width: 84px; height: 100px;
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden; border-radius: 14px;
+    .sp-char-aura.c1-aura {
+      background: radial-gradient(circle, rgba(91,155,213,0.40) 0%, rgba(91,155,213,0) 68%);
     }
-    .sp-char-card .char-svg { display: block; width: 84px !important; height: 100px !important; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.13)) !important; }
-    .sp-char-card .char-img-custom { width: 84px !important; height: 100px !important; object-fit: contain; }
-    .sp-char-label { font-size: 11px; font-weight: 700; letter-spacing: 0.01em; }
-    .sp-char-card.c1 .sp-char-label { color: var(--blue); }
-    .sp-char-card.c2 .sp-char-label { color: #FF8FA0; }
-    .sp-vs-heart {
-      font-size: 30px; flex-shrink: 0;
-      animation: heartbeat 1.4s ease-in-out infinite;
+    .sp-char-aura.c2-aura {
+      background: radial-gradient(circle, rgba(255,120,160,0.40) 0%, rgba(255,120,160,0) 68%);
+      animation-delay: -1.5s;
     }
+    @keyframes aura-pulse {
+      0%,100% { transform: translate(-50%,-50%) scale(1); opacity: 0.8; }
+      50%     { transform: translate(-50%,-50%) scale(1.25); opacity: 1; }
+    }
+    #sp-char-img-1, #sp-char-img-2 {
+      position: relative; z-index: 1;
+      display: flex; align-items: flex-end; justify-content: center;
+    }
+    .sp-couple-char .char-svg {
+      display: block; width: 100px !important; height: 118px !important;
+      filter: drop-shadow(0 6px 14px rgba(0,0,0,0.14)) !important;
+    }
+    /* ── Hearts stream between characters ── */
+    .sp-hearts-col {
+      display: flex; flex-direction: column; align-items: center;
+      position: relative; height: 120px; width: 40px; flex-shrink: 0;
+      overflow: visible;
+    }
+    .sp-fheart {
+      position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+      font-size: 17px; opacity: 0;
+      animation: sp-heart-rise 2.6s ease-out infinite;
+      animation-delay: var(--d, 0s);
+    }
+    @keyframes sp-heart-rise {
+      0%   { transform: translateX(-50%) translateY(0) scale(0.5); opacity: 0; }
+      18%  { opacity: 1; }
+      80%  { opacity: 0.7; }
+      100% { transform: translateX(-50%) translateY(-110px) scale(1.15); opacity: 0; }
+    }
+    /* ── Start button ── */
     .sp-btn {
-      margin-top: 2px; padding: 15px 20px; width: 100%;
-      background: linear-gradient(135deg, #5B9BD5 0%, #8EC5F0 100%);
+      margin-top: 4px; padding: 15px 20px; width: 100%;
+      background: linear-gradient(135deg, #6B8EE8 0%, #A87EF5 50%, #F07898 100%);
       color: white; border: none; border-radius: 50px;
       font-size: 15px; font-weight: 700; cursor: pointer;
       display: flex; align-items: center; justify-content: center; gap: 7px;
-      box-shadow: 0 8px 26px rgba(91,155,213,0.50);
+      box-shadow: 0 8px 28px rgba(140,100,200,0.42);
       transition: transform 0.15s, box-shadow 0.15s;
-      animation: btn-pulse 2.6s ease-in-out infinite;
+      animation: btn-pulse 2.8s ease-in-out infinite;
       white-space: nowrap;
     }
-    .sp-btn:hover  { transform: translateY(-2px); }
+    .sp-btn:hover  { transform: translateY(-2px) scale(1.02); }
     .sp-btn:active { transform: scale(0.96); }
     @keyframes btn-pulse {
-      0%,100% { box-shadow: 0 8px 26px rgba(91,155,213,0.50); }
-      50%     { box-shadow: 0 10px 34px rgba(91,155,213,0.75); }
+      0%,100% { box-shadow: 0 8px 28px rgba(140,100,200,0.42); }
+      50%     { box-shadow: 0 12px 36px rgba(140,100,200,0.65); }
     }
     .sp-btn-emoji { font-size: 16px; }
     .sp-hint {
-      font-size: 10px; color: var(--sub); opacity: 0.65;
+      font-size: 10px; color: #A0A0C8; opacity: 0.80;
       text-align: center; line-height: 1.5; margin: 0;
     }
-    /* ── Mobile safety ── */
     @media (max-width: 360px) {
-      .sp-main-row { gap: 12px; }
-      .sp-char-card { padding: 12px 8px 10px; width: 100px; }
-      .sp-char-card .char-svg { width: 70px !important; height: 83px !important; }
-      #sp-char-img-1, #sp-char-img-2 { width: 70px; height: 83px; }
+      .sp-couple-char .char-svg { width: 82px !important; height: 97px !important; }
       .sp-btn { font-size: 14px; padding: 13px 16px; }
     }
   </style>
@@ -1107,75 +1133,134 @@
 
 <!-- ── Start / Splash page ── -->
 <div id="start-page">
-  <div class="sp-deco" style="top:7%;left:10%;animation-delay:0s">⭐</div>
-  <div class="sp-deco" style="top:12%;right:9%;animation-delay:1.5s">✨</div>
-  <div class="sp-deco" style="top:80%;left:8%;animation-delay:2.8s">🐾</div>
-  <div class="sp-deco" style="top:75%;right:11%;animation-delay:0.8s">💙</div>
-  <div class="sp-deco" style="top:45%;left:5%;animation-delay:3.5s">🌟</div>
+  <!-- floating sakura & star decos -->
+  <div class="sp-deco" style="top:6%;left:9%;animation-delay:0s">🌸</div>
+  <div class="sp-deco" style="top:11%;right:8%;animation-delay:1.8s">✨</div>
+  <div class="sp-deco" style="top:78%;left:7%;animation-delay:3.2s">🌸</div>
+  <div class="sp-deco" style="top:72%;right:10%;animation-delay:0.6s">💫</div>
+  <div class="sp-deco" style="top:42%;left:4%;animation-delay:4.0s">⭐</div>
+  <div class="sp-deco" style="top:30%;right:5%;animation-delay:2.5s">🌸</div>
+  <div class="sp-deco" style="top:88%;left:40%;animation-delay:1.2s">✨</div>
 
   <div class="sp-content">
     <div class="sp-paw-logo">🐾</div>
     <div class="sp-title">恋爱积分簿</div>
     <p class="sp-tagline">记录每一份甜蜜与爱 🌸</p>
 
-    <div class="sp-main-row">
-      <div class="sp-char-card c1">
+    <!-- Couple scene: two free-floating characters + rising hearts -->
+    <div class="sp-couple-scene">
+
+      <!-- Boy (char1) — leans toward center -->
+      <div class="sp-couple-char c1">
+        <div class="sp-char-aura c1-aura"></div>
         <div id="sp-char-img-1">
-          <svg class="char-svg" viewBox="0 0 110 132" xmlns="http://www.w3.org/2000/svg">
-            <ellipse cx="55" cy="127" rx="25" ry="4" fill="rgba(0,0,0,0.09)"/>
-            <g><path d="M 28 45 Q 4 43 4 65 Q 4 86 18 93 Q 32 98 39 82 Q 46 64 36 43 Z" fill="#DDE8F5" stroke="#B8CDE8" stroke-width="1.5"/></g>
-            <g><path d="M 82 45 Q 106 43 106 65 Q 106 86 92 93 Q 78 98 71 82 Q 64 64 74 43 Z" fill="#DDE8F5" stroke="#B8CDE8" stroke-width="1.5"/></g>
-            <ellipse cx="55" cy="86" rx="37" ry="42" fill="#EEF5FF" stroke="#C8DCEE" stroke-width="1.5"/>
-            <ellipse cx="55" cy="65" rx="27" ry="24" fill="#F5F9FF" stroke="#D5E8F5" stroke-width="1"/>
-            <path d="M 40 49 Q 44.5 46 49 49" stroke="#2A2A2A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-            <path d="M 61 49 Q 65.5 46 70 49" stroke="#2A2A2A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-            <circle cx="44" cy="56" r="4.5" fill="#2A2A2A"/>
-            <circle cx="66" cy="56" r="4.5" fill="#2A2A2A"/>
-            <ellipse cx="55" cy="66" rx="4" ry="2.5" fill="#2A2A2A"/>
-            <path d="M 46.5 70 Q 55 80 63.5 70" stroke="#2A2A2A" stroke-width="2" fill="none" stroke-linecap="round"/>
-            <rect x="33" y="90" width="44" height="8" rx="4" fill="#5B9BD5" stroke="#2B6AB3" stroke-width="0.5"/>
-            <circle cx="55" cy="94" r="3.5" fill="#2B6AB3"/>
-            <circle cx="55" cy="94" r="1.5" fill="#A8D4F8"/>
+          <svg class="char-svg" viewBox="0 0 110 132" xmlns="http://www.w3.org/2000/svg" style="transform:rotate(5deg)">
+            <!-- shadow -->
+            <ellipse cx="55" cy="128" rx="22" ry="3.5" fill="rgba(91,155,213,0.18)"/>
+            <!-- ears -->
+            <path d="M 28 46 Q 3 44 3 66 Q 3 87 18 94 Q 32 99 39 83 Q 47 65 36 44 Z" fill="#D0E4F8" stroke="#A8C8EC" stroke-width="1.5"/>
+            <path d="M 82 46 Q 107 44 107 66 Q 107 87 92 94 Q 78 99 71 83 Q 63 65 74 44 Z" fill="#D0E4F8" stroke="#A8C8EC" stroke-width="1.5"/>
+            <!-- inner ears -->
+            <path d="M 31 54 Q 14 54 14 68 Q 14 81 25 86 Q 35 89 39 76 Q 44 64 35 53 Z" fill="#B0CCEC" opacity="0.5"/>
+            <path d="M 79 54 Q 96 54 96 68 Q 96 81 85 86 Q 75 89 71 76 Q 66 64 75 53 Z" fill="#B0CCEC" opacity="0.5"/>
+            <!-- body -->
+            <ellipse cx="55" cy="88" rx="37" ry="41" fill="#EBF4FF" stroke="#BDD5EE" stroke-width="1.5"/>
+            <!-- face -->
+            <ellipse cx="55" cy="64" rx="27" ry="24" fill="#F4F9FF" stroke="#CCE0F5" stroke-width="1"/>
+            <!-- eyebrows (happy) -->
+            <path d="M 40 51 Q 45 48 49 51" stroke="#3A3A4A" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+            <path d="M 61 51 Q 65 48 70 51" stroke="#3A3A4A" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+            <!-- eyes with shine -->
+            <circle cx="44.5" cy="57.5" r="5" fill="#2A2A3A"/>
+            <circle cx="65.5" cy="57.5" r="5" fill="#2A2A3A"/>
+            <circle cx="46.5" cy="55.5" r="1.8" fill="white"/>
+            <circle cx="67.5" cy="55.5" r="1.8" fill="white"/>
+            <!-- nose -->
+            <ellipse cx="55" cy="66" rx="3.5" ry="2.5" fill="#3A3A4A"/>
+            <!-- smile -->
+            <path d="M 46 71 Q 55 81 64 71" stroke="#3A3A4A" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <!-- blush -->
+            <ellipse cx="37" cy="63" rx="6" ry="4" fill="#FFB8C8" opacity="0.45"/>
+            <ellipse cx="73" cy="63" rx="6" ry="4" fill="#FFB8C8" opacity="0.45"/>
+            <!-- blue collar -->
+            <rect x="34" y="91" width="42" height="8" rx="4" fill="#5B9BD5" stroke="#2B6AB3" stroke-width="0.5"/>
+            <circle cx="55" cy="95" r="3.5" fill="#2B6AB3"/>
+            <circle cx="55" cy="95" r="1.5" fill="#A8D4F8"/>
+            <!-- arm reaching right (toward girl) -->
+            <path d="M 88 96 Q 100 90 104 82" stroke="#D0E4F8" stroke-width="7" fill="none" stroke-linecap="round"/>
+            <path d="M 88 96 Q 100 90 104 82" stroke="#BDD5EE" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            <!-- tiny heart in paw -->
+            <text x="100" y="80" font-size="9" text-anchor="middle">💙</text>
           </svg>
         </div>
-        <div class="sp-char-label" id="sp-name-1">线条小狗·他</div>
       </div>
 
-      <div class="sp-vs-heart">💙</div>
+      <!-- Hearts flowing up between them -->
+      <div class="sp-hearts-col">
+        <span class="sp-fheart" style="--d:0s">💕</span>
+        <span class="sp-fheart" style="--d:0.9s">💗</span>
+        <span class="sp-fheart" style="--d:1.8s">💖</span>
+        <span class="sp-fheart" style="--d:2.7s">✨</span>
+      </div>
 
-      <div class="sp-char-card c2">
+      <!-- Girl (char2) — leans toward center -->
+      <div class="sp-couple-char c2">
+        <div class="sp-char-aura c2-aura"></div>
         <div id="sp-char-img-2">
-          <svg class="char-svg" viewBox="0 0 110 132" xmlns="http://www.w3.org/2000/svg">
-            <ellipse cx="55" cy="127" rx="25" ry="4" fill="rgba(255,143,160,0.15)"/>
-            <g><path d="M 28 45 Q 4 43 4 65 Q 4 86 18 93 Q 32 98 39 82 Q 46 64 36 43 Z" fill="#FFB8D0" stroke="#D9607A" stroke-width="1.8"/></g>
-            <g><path d="M 82 45 Q 106 43 106 65 Q 106 86 92 93 Q 78 98 71 82 Q 64 64 74 43 Z" fill="#FFB8D0" stroke="#D9607A" stroke-width="1.8"/></g>
-            <ellipse cx="55" cy="86" rx="37" ry="42" fill="#FFC8DE" stroke="#D9607A" stroke-width="1.8"/>
-            <ellipse cx="55" cy="65" rx="27" ry="24" fill="#FFD9EB" stroke="#D9607A" stroke-width="1"/>
-            <path d="M 55 38 Q 42 28 38 36 Q 36 44 44 47 Q 50 49 55 43 Z" fill="#FF8FA0" stroke="#E8607A" stroke-width="0.8"/>
-            <path d="M 55 38 Q 68 28 72 36 Q 74 44 66 47 Q 60 49 55 43 Z" fill="#FF8FA0" stroke="#E8607A" stroke-width="0.8"/>
-            <ellipse cx="55" cy="40.5" rx="5.5" ry="6" fill="#E8607A"/>
-            <circle cx="55" cy="39" r="2.5" fill="#FFB3C6"/>
-            <path d="M 40 49 Q 44.5 46 49 49" stroke="#2A2A2A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-            <path d="M 61 49 Q 65.5 46 70 49" stroke="#2A2A2A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-            <circle cx="44" cy="56" r="4.5" fill="#2A2A2A"/>
-            <circle cx="66" cy="56" r="4.5" fill="#2A2A2A"/>
-            <line x1="38" y1="52" x2="35.5" y2="49" stroke="#2A2A2A" stroke-width="2" stroke-linecap="round"/>
-            <line x1="41.5" y1="51" x2="40" y2="48" stroke="#2A2A2A" stroke-width="2" stroke-linecap="round"/>
-            <line x1="72" y1="52" x2="74.5" y2="49" stroke="#2A2A2A" stroke-width="2" stroke-linecap="round"/>
-            <line x1="68.5" y1="51" x2="70" y2="48" stroke="#2A2A2A" stroke-width="2" stroke-linecap="round"/>
-            <ellipse cx="55" cy="66" rx="4" ry="2.5" fill="#2A2A2A"/>
-            <path d="M 46.5 70 Q 55 80 63.5 70" stroke="#2A2A2A" stroke-width="2" fill="none" stroke-linecap="round"/>
-            <rect x="33" y="90" width="44" height="8" rx="4" fill="#FF8FA0" stroke="#E8607A" stroke-width="0.5"/>
-            <circle cx="55" cy="94" r="3.5" fill="#E8607A"/>
-            <circle cx="55" cy="94" r="1.5" fill="#FFD4E8"/>
+          <svg class="char-svg" viewBox="0 0 110 132" xmlns="http://www.w3.org/2000/svg" style="transform:rotate(-5deg)">
+            <!-- shadow -->
+            <ellipse cx="55" cy="128" rx="22" ry="3.5" fill="rgba(255,143,160,0.18)"/>
+            <!-- ears (with inner pink) -->
+            <path d="M 28 46 Q 3 44 3 66 Q 3 87 18 94 Q 32 99 39 83 Q 47 65 36 44 Z" fill="#FFBDD4" stroke="#E8809A" stroke-width="1.8"/>
+            <path d="M 82 46 Q 107 44 107 66 Q 107 87 92 94 Q 78 99 71 83 Q 63 65 74 44 Z" fill="#FFBDD4" stroke="#E8809A" stroke-width="1.8"/>
+            <path d="M 31 54 Q 14 54 14 68 Q 14 81 25 86 Q 35 89 39 76 Q 44 64 35 53 Z" fill="#FF9AB5" opacity="0.5"/>
+            <path d="M 79 54 Q 96 54 96 68 Q 96 81 85 86 Q 75 89 71 76 Q 66 64 75 53 Z" fill="#FF9AB5" opacity="0.5"/>
+            <!-- bow on head -->
+            <path d="M 38 36 Q 46 28 55 34 Q 55 28 55 24 Q 55 28 55 34 Q 64 28 72 36 Q 64 40 55 36 Q 46 40 38 36 Z" fill="#FF8FA0" stroke="#D96080" stroke-width="0.8"/>
+            <circle cx="55" cy="35" r="4" fill="#E8607A"/>
+            <circle cx="55" cy="35" r="2" fill="#FFB3C6"/>
+            <!-- body -->
+            <ellipse cx="55" cy="88" rx="37" ry="41" fill="#FFCEDE" stroke="#E8809A" stroke-width="1.8"/>
+            <!-- face -->
+            <ellipse cx="55" cy="64" rx="27" ry="24" fill="#FFE0EC" stroke="#E8A0BA" stroke-width="1"/>
+            <!-- eyebrows -->
+            <path d="M 40 51 Q 45 48 49 51" stroke="#3A2A3A" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+            <path d="M 61 51 Q 65 48 70 51" stroke="#3A2A3A" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+            <!-- big sparkly eyes -->
+            <circle cx="44.5" cy="57.5" r="5.5" fill="#2A2A3A"/>
+            <circle cx="65.5" cy="57.5" r="5.5" fill="#2A2A3A"/>
+            <circle cx="46.5" cy="55" r="2.2" fill="white"/>
+            <circle cx="67.5" cy="55" r="2.2" fill="white"/>
+            <circle cx="48" cy="58" r="1" fill="white"/>
+            <circle cx="69" cy="58" r="1" fill="white"/>
+            <!-- nose -->
+            <ellipse cx="55" cy="66" rx="3" ry="2" fill="#D96080"/>
+            <!-- cute smile -->
+            <path d="M 46 70 Q 55 82 64 70" stroke="#D96080" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <!-- rosy cheeks -->
+            <ellipse cx="37" cy="63" rx="7" ry="4.5" fill="#FFB0C0" opacity="0.55"/>
+            <ellipse cx="73" cy="63" rx="7" ry="4.5" fill="#FFB0C0" opacity="0.55"/>
+            <!-- whiskers -->
+            <line x1="38" y1="62" x2="24" y2="59" stroke="#D96080" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+            <line x1="38" y1="65" x2="24" y2="65" stroke="#D96080" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+            <line x1="72" y1="62" x2="86" y2="59" stroke="#D96080" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+            <line x1="72" y1="65" x2="86" y2="65" stroke="#D96080" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+            <!-- pink collar with flower -->
+            <rect x="34" y="91" width="42" height="8" rx="4" fill="#FF8FA0" stroke="#E8607A" stroke-width="0.5"/>
+            <circle cx="55" cy="95" r="3.5" fill="#E8607A"/>
+            <circle cx="55" cy="95" r="1.5" fill="#FFD4E8"/>
+            <!-- arm reaching left (toward boy) -->
+            <path d="M 22 96 Q 10 90 6 82" stroke="#FFBDD4" stroke-width="7" fill="none" stroke-linecap="round"/>
+            <path d="M 22 96 Q 10 90 6 82" stroke="#E8809A" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            <!-- tiny heart in paw -->
+            <text x="8" y="80" font-size="9" text-anchor="middle">🌸</text>
           </svg>
         </div>
-        <div class="sp-char-label" id="sp-name-2">线条小狗·她</div>
       </div>
     </div>
 
     <button class="sp-btn" onclick="startApp()">
-      开始我们的故事
+      💕 开始我们的故事
     </button>
   </div>
 </div>
